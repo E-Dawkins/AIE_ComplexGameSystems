@@ -13,8 +13,6 @@
 *.dylib
 *.dll
 
-*.ipch
-
 # Fortran module files
 *.mod
 

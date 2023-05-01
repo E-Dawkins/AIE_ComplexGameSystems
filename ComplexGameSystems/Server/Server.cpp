@@ -48,6 +48,16 @@ void Server::HandleNetworkMessages()
 			case ID_CONNECTION_LOST:
 				std::cout << "A client has lost connection." << std::endl;
 				break;
+			case ID_CLIENT_CLIENT_DATA:
+			{
+				RakNet::BitStream bs(packet->data, packet->length, false);
+				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
+					0, packet->systemAddress, true);
+				break;
+			}
+			case ID_CLIENT_DISCONNECT:
+				ClientDisconnect(packet);
+				break;
 			default:
 				std::cout << "Received a message with an unknown id: " 
 					<< packet->data[0] << std::endl;
@@ -77,4 +87,20 @@ void Server::SendNewClientID(RakNet::SystemAddress& _address)
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, 
 		RELIABLE_ORDERED, 0, _address, false);
+}
+
+void Server::ClientDisconnect(RakNet::Packet* _packet)
+{
+	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
+	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+	int id;
+	bsIn.Read(id);
+
+	RakNet::BitStream bs;
+	bs.Write((RakNet::MessageID)ID_CLIENT_DISCONNECT);
+	bs.Write(id);
+
+	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
+		0, _packet->systemAddress, true);
 }

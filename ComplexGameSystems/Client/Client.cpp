@@ -43,6 +43,8 @@ bool Client::startup() {
 
 void Client::shutdown() {
 
+	OnClientDisconnect();
+
 	Gizmos::destroy();
 }
 
@@ -85,6 +87,12 @@ void Client::draw() {
 										  0.1f, 1000.f);
 
 	Gizmos::addSphere(m_gameobject.position, 1.f, 32, 32, m_gameobject.color);
+
+	for (auto& otherClient : m_otherClientGameObjects)
+	{
+		Gizmos::addSphere(otherClient.second.position,
+			1.f, 32, 32, otherClient.second.color);
+	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
@@ -164,6 +172,12 @@ void Client::HandleNetworkMessages()
 		case ID_SERVER_SET_CLIENT_ID:
 			OnSetClientIDPacket(packet);
 			break;
+		case ID_CLIENT_CLIENT_DATA:
+			OnReceivedClientDataPacket(packet);
+			break;
+		case ID_CLIENT_DISCONNECT:
+			OnReceivedClientDisconnect(packet);
+			break;
 		default:
 			std::cout << "Received a message with an unknown id: "
 				<< packet->data[0] << std::endl;
@@ -184,4 +198,51 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 void Client::SendClientGameObject()
 {
 	m_gameobject.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+}
+
+void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
+{
+	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
+	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+	int clientID;
+	bsIn.Read(clientID);
+
+	if (clientID != m_gameobject.id)
+	{
+		GameObject object;
+		object.Read(_packet);
+
+		m_otherClientGameObjects[clientID] = object;
+
+		std::cout << "Client " << clientID << " at: ("
+			<< object.position.x << ", "
+			<< object.position.y << ", "
+			<< object.position.z << ")" << std::endl;
+	}
+}
+
+void Client::OnClientDisconnect()
+{
+	RakNet::BitStream bs;
+	bs.Write((RakNet::MessageID)ID_CLIENT_DISCONNECT);
+
+	int id = m_gameobject.id;
+	bs.Write(id);
+
+	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
+		0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+}
+
+void Client::OnReceivedClientDisconnect(RakNet::Packet* _packet)
+{
+	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
+	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+
+	int clientID;
+	bsIn.Read(clientID);
+
+	std::cout << "Client: " << clientID << " has disconnected.";
+
+	m_otherClientGameObjects.erase(clientID);
 }

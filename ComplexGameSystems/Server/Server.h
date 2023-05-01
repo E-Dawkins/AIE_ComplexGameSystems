@@ -10,6 +10,7 @@ protected:
 	void HandleNetworkMessages();
 	void SendClientPing(const char* _message);
 	void SendNewClientID(RakNet::SystemAddress& _address);
+	void ClientDisconnect(RakNet::Packet* _packet);
 
 	RakNet::RakPeerInterface* m_pPeerInterface;
 	int m_nextClientID = 1;
