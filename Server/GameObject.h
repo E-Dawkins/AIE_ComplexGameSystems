@@ -5,15 +5,21 @@
 class GameObject
 {
 public:
-	GameObject();
+	// This data struct serves as a base, and can be overridden
+	struct Data
+	{
+		glm::vec3 position;
+		glm::vec3 localPosition;
+		glm::vec3 velocity;
+		glm::vec4 color;
+		float radius;
+	};
 
-	glm::vec3 position;
-	glm::vec3 localPosition;
-	glm::vec3 velocity;
-	glm::vec4 color;
-	float radius;
-	float lifetime;
+	Data data;
+
+	// Any data that shouldn't be overridable
 	int id;
+	float lifetime;
 
 	void Write(RakNet::RakPeerInterface* _pPeerInterface,
 		const RakNet::SystemAddress& _address, bool _broadcast);

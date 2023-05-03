@@ -112,9 +112,9 @@ void Server::SendNewClientID(RakNet::SystemAddress& _address)
 	// Send us to all other clients
 	int id = m_nextClientID - 1;
 	GameObject obj;
-	obj.position = glm::vec3(0);
-	obj.color = GameObject::GetColor(id);
-	obj.radius = 1.f;
+	obj.data.position = glm::vec3(0);
+	obj.data.color = GameObject::GetColor(id);
+	obj.data.radius = 1.f;
 	obj.id = id;
 	obj.Write(m_pPeerInterface, _address, true);
 
@@ -158,10 +158,10 @@ void Server::SpawnObject(glm::vec3 _position, glm::vec3 _velocity, float _radius
 {
 	m_gameObjects[m_nextServerID] = GameObject();
 	m_gameObjects[m_nextServerID].id = m_nextServerID;
-	m_gameObjects[m_nextServerID].position = _position;
-	m_gameObjects[m_nextServerID].localPosition = _position;
-	m_gameObjects[m_nextServerID].velocity = _velocity;
-	m_gameObjects[m_nextServerID].radius = _radius;
+	m_gameObjects[m_nextServerID].data.position = _position;
+	m_gameObjects[m_nextServerID].data.localPosition = _position;
+	m_gameObjects[m_nextServerID].data.velocity = _velocity;
+	m_gameObjects[m_nextServerID].data.radius = _radius;
 
 	m_gameObjects[m_nextServerID].Write(m_pPeerInterface, 
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);

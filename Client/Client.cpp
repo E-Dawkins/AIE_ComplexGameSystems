@@ -33,7 +33,7 @@ bool Client::startup() {
 										  getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
 
-	m_gameobject.position = vec3(0, 0, 0);
+	m_gameobject.data.position = vec3(0, 0, 0);
 	m_facing = vec3(1, 0, 0);
 
 	InitialiseClientConnection();
@@ -62,38 +62,38 @@ void Client::update(float deltaTime) {
 	aie::Input* input = aie::Input::getInstance();
 
 	// Store previous velocity
-	glm::vec3 oldVelocity = m_gameobject.velocity;
+	glm::vec3 oldVelocity = m_gameobject.data.velocity;
 
 	// Zero it in case no keys are pressed
-	m_gameobject.velocity = glm::vec3(0);
+	m_gameobject.data.velocity = glm::vec3(0);
 
 	if (input->isKeyDown(aie::INPUT_KEY_LEFT))
 	{
-		m_gameobject.position.x -= 10.f * deltaTime;
-		m_gameobject.velocity.x = -10;
+		m_gameobject.data.position.x -= 10.f * deltaTime;
+		m_gameobject.data.velocity.x = -10;
 		m_facing = glm::vec3(-1, 0, 0);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
 	{
-		m_gameobject.position.x += 10.f * deltaTime;
-		m_gameobject.velocity.x = 10;
+		m_gameobject.data.position.x += 10.f * deltaTime;
+		m_gameobject.data.velocity.x = 10;
 		m_facing = glm::vec3(1, 0, 0);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_UP))
 	{
-		m_gameobject.position.z -= 10.f * deltaTime;
-		m_gameobject.velocity.z = -10;
+		m_gameobject.data.position.z -= 10.f * deltaTime;
+		m_gameobject.data.velocity.z = -10;
 		m_facing = glm::vec3(0, 0, -1);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_DOWN))
 	{
-		m_gameobject.position.z += 10.f * deltaTime;
-		m_gameobject.velocity.z = 10;
+		m_gameobject.data.position.z += 10.f * deltaTime;
+		m_gameobject.data.velocity.z = 10;
 		m_facing = glm::vec3(0, 0, 1);
 	}
 
 	// Only send a network message when we change our movement state
-	if (oldVelocity != m_gameobject.velocity)
+	if (oldVelocity != m_gameobject.data.velocity)
 		SendClientGameObject();
 
 	if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
@@ -109,9 +109,9 @@ void Client::update(float deltaTime) {
 
 		// Close 50% of the distance each frame
 		float alpha = 0.5f;
-		otherClient.second.localPosition =
-			alpha * otherClient.second.position +
-			(1.f - alpha) * otherClient.second.localPosition;
+		otherClient.second.data.localPosition =
+			alpha * otherClient.second.data.position +
+			(1.f - alpha) * otherClient.second.data.localPosition;
 	}
 }
 
@@ -126,14 +126,14 @@ void Client::draw() {
 										  0.1f, 1000.f);
 
 	// Draw body
-	Gizmos::addSphere(m_gameobject.position,
-		m_gameobject.radius, 8, 8, m_gameobject.color);
+	Gizmos::addSphere(m_gameobject.data.position,
+		m_gameobject.data.radius, 8, 8, m_gameobject.data.color);
 
 	// Draw other clients bodies
 	for (auto& otherClient : m_otherClientGameObjects)
 	{
-		Gizmos::addSphere(otherClient.second.localPosition,
-			otherClient.second.radius, 8, 8, otherClient.second.color);
+		Gizmos::addSphere(otherClient.second.data.localPosition,
+			otherClient.second.data.radius, 8, 8, otherClient.second.data.color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
@@ -236,8 +236,8 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(m_gameobject.id);
-	m_gameobject.color = GameObject::GetColor(m_gameobject.id);
-	m_gameobject.radius = 1.f;
+	m_gameobject.data.color = GameObject::GetColor(m_gameobject.id);
+	m_gameobject.data.radius = 1.f;
 
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;
 }
@@ -268,16 +268,16 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		else
 		{
 			// existing object - copy position, color, velocity but not localPosition
-			m_otherClientGameObjects[object.id].position = object.position;
-			m_otherClientGameObjects[object.id].color = object.color;
-			m_otherClientGameObjects[object.id].velocity = object.velocity;
+			m_otherClientGameObjects[object.id].data.position = object.data.position;
+			m_otherClientGameObjects[object.id].data.color = object.data.color;
+			m_otherClientGameObjects[object.id].data.velocity = object.data.velocity;
 		}
 
 		// TODO - for now just output the object position to console
 		std::cout << "Client " << clientID << " at: ("
-			<< object.position.x << ", "
-			<< object.position.y << ", "
-			<< object.position.z << ")" << std::endl;
+			<< object.data.position.x << ", "
+			<< object.data.position.y << ", "
+			<< object.data.position.z << ")" << std::endl;
 	}
 }
 
@@ -311,7 +311,7 @@ void Client::SendSpawnBulletPacket()
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_BULLET);
 
-	glm::vec3 spawnPos = m_gameobject.position + m_facing;
+	glm::vec3 spawnPos = m_gameobject.data.position + m_facing;
 
 	bs.Write((char*)&spawnPos, sizeof(glm::vec3));
 	bs.Write((char*)&m_facing, sizeof(glm::vec3));
