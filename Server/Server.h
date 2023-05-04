@@ -19,7 +19,6 @@ protected:
 	void Despawn(int _id);
 
 	float GetElapsedTime();
-
 	void UpdateObjects();
 
 	RakNet::RakPeerInterface* m_pPeerInterface;
@@ -29,5 +28,7 @@ protected:
 
 	int m_nextServerID = 1000;
 	LARGE_INTEGER m_lastTime;
+
+	const unsigned short PORT = 5456;
 };
 

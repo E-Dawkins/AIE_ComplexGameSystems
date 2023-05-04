@@ -11,8 +11,6 @@
 void Server::Run()
 {
 	// The port the server is hosted on
-	const unsigned short PORT = 5456;
-
 	std::cout << "Starting up the server..." << std::endl;
 
 	m_pPeerInterface = RakNet::RakPeerInterface::GetInstance();

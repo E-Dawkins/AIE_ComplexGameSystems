@@ -13,12 +13,8 @@ using glm::vec4;
 using glm::mat4;
 using aie::Gizmos;
 
-Client::Client() {
-
-}
-
-Client::~Client() {
-}
+Client::Client() = default;
+Client::~Client() = default;
 
 bool Client::startup() {
 	
@@ -147,6 +143,12 @@ void Client::HandleNetworkConnections()
 void Client::InitialiseClientConnection()
 {
 	m_pPeerInterface = RakNet::RakPeerInterface::GetInstance();
+
+	// Ask client what ip they want to connect to
+	std::cout << "IP to connect to: ";
+	std::string ipInput;
+	std::cin >> ipInput;
+	IP = ipInput.c_str();
 
 	// Create an empty socket descriptor, no data is
 	// needed as we are connecting to a server
