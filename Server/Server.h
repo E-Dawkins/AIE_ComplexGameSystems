@@ -1,6 +1,6 @@
 #pragma once
 #include "RakPeerInterface.h"
-#include "GameObject.h"
+#include "../Client/GameObject.h"
 #include <unordered_map>
 
 class Server

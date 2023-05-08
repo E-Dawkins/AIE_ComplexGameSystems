@@ -5,7 +5,7 @@
 
 #include <RakPeerInterface.h>
 #include "../Server/GameMessages.h"
-#include "../Server/GameObject.h"
+#include "GameObject.h"
 #include <unordered_map>
 
 class Client : public aie::Application {

@@ -274,12 +274,6 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 			m_otherClientGameObjects[object.id].data.color = object.data.color;
 			m_otherClientGameObjects[object.id].data.velocity = object.data.velocity;
 		}
-
-		// TODO - for now just output the object position to console
-		std::cout << "Client " << clientID << " at: ("
-			<< object.data.position.x << ", "
-			<< object.data.position.y << ", "
-			<< object.data.position.z << ")" << std::endl;
 	}
 }
 

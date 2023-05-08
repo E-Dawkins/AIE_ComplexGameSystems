@@ -100,14 +100,14 @@ void Server::SendNewClientID(RakNet::SystemAddress& _address)
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, 
 		RELIABLE_ORDERED, 0, _address, false);
 
-	// Send existing gameobjects to new client
+	// Send existing gameobjects to new client - old client/s
 	for (auto it = m_gameObjects.begin(); it != m_gameObjects.end(); it++)
 	{
 		GameObject obj = it->second;
 		obj.Write(m_pPeerInterface, _address, false);
 	}
 
-	// Send us to all other clients
+	// Send us to all other clients - new client
 	int id = m_nextClientID - 1;
 	GameObject obj;
 	obj.data.position = glm::vec3(0);
