@@ -44,15 +44,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Build</OutDir>
-    <IntDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Intermediate</IntDir>
+    <OutDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Build\</OutDir>
+    <IntDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Intermediate\</IntDir>
     <IncludePath>$(SolutionDir)bootstrap;$(SolutionDir)dependencies/imgui;$(SolutionDir)dependencies/glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)dependencies/raknet/include</IncludePath>
     <LibraryPath>$(SolutionDir)temp\bootstrap\$(Configuration);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)dependencies/raknet/libs</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Build</OutDir>
-    <IntDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Intermediate</IntDir>
+    <OutDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Build\</OutDir>
+    <IntDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Intermediate\</IntDir>
     <IncludePath>$(SolutionDir)bootstrap;$(SolutionDir)dependencies/imgui;$(SolutionDir)dependencies/glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)dependencies/raknet/include</IncludePath>
     <LibraryPath>$(SolutionDir)temp\bootstrap\$(Configuration);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)dependencies/raknet/libs</LibraryPath>
   </PropertyGroup>
@@ -104,6 +104,7 @@
   <ItemGroup>
     <ClInclude Include="Client.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="NetworkData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

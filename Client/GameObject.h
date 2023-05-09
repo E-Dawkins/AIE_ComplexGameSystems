@@ -1,24 +1,17 @@
 #pragma once
 #include <glm/ext.hpp>
 #include <RakPeerInterface.h>
+#include "NetworkData.h"
 
-#include <vector>
-#include <any>
+using glm::vec3;
+using glm::vec4;
 
 class GameObject
 {
 public:
-	// This data struct serves as a base, and can be overridden
-	struct Data
-	{
-		glm::vec4 color;
-		float radius;
-		glm::vec3 position;
-		glm::vec3 localPosition;
-		glm::vec3 velocity;
-	} data;
+	GameObject();
 
-	std::vector<std::any> networkData;
+	NetworkData networkData;
 
 	// Any data that shouldn't be overridable
 	int id;
@@ -30,6 +23,5 @@ public:
 
 	void Update(float _deltaTime);
 
-	static glm::vec4 GetColor(int _id);
+	static vec4 GetColor(int _id);
 };
-

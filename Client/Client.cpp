@@ -29,7 +29,8 @@ bool Client::startup() {
 										  getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
 
-	m_gameobject.data.position = vec3(0, 0, 0);
+	m_gameobject = GameObject();
+	m_gameobject.networkData.SetElement("Position", vec3(0));
 	m_facing = vec3(1, 0, 0);
 
 	InitialiseClientConnection();
@@ -58,38 +59,52 @@ void Client::update(float deltaTime) {
 	aie::Input* input = aie::Input::getInstance();
 
 	// Store previous velocity
-	glm::vec3 oldVelocity = m_gameobject.data.velocity;
+	glm::vec3 oldVelocity = m_gameobject.networkData.GetElement<vec3>("Velocity");
 
 	// Zero it in case no keys are pressed
-	m_gameobject.data.velocity = glm::vec3(0);
+	m_gameobject.networkData.SetElement("Velocity", vec3(0));
+
+	vec3 pos = m_gameobject.networkData.GetElement<vec3>("Position");
+	vec3 vel = m_gameobject.networkData.GetElement<vec3>("Velocity");
 
 	if (input->isKeyDown(aie::INPUT_KEY_LEFT))
 	{
-		m_gameobject.data.position.x -= 10.f * deltaTime;
-		m_gameobject.data.velocity.x = -10;
+		pos.x -= 10.f * deltaTime;
+		vel.x = -10;
+		/*m_gameobject.data.position.x -= 10.f * deltaTime;
+		m_gameobject.data.velocity.x = -10;*/
 		m_facing = glm::vec3(-1, 0, 0);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
 	{
-		m_gameobject.data.position.x += 10.f * deltaTime;
-		m_gameobject.data.velocity.x = 10;
+		pos.x += 10.f * deltaTime;
+		vel.x = 10;
+		/*m_gameobject.data.position.x += 10.f * deltaTime;
+		m_gameobject.data.velocity.x = 10;*/
 		m_facing = glm::vec3(1, 0, 0);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_UP))
 	{
-		m_gameobject.data.position.z -= 10.f * deltaTime;
-		m_gameobject.data.velocity.z = -10;
+		pos.z -= 10.f * deltaTime;
+		vel.z = -10;
+		/*m_gameobject.data.position.z -= 10.f * deltaTime;
+		m_gameobject.data.velocity.z = -10;*/
 		m_facing = glm::vec3(0, 0, -1);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_DOWN))
 	{
-		m_gameobject.data.position.z += 10.f * deltaTime;
-		m_gameobject.data.velocity.z = 10;
+		pos.z += 10.f * deltaTime;
+		vel.z = 10;
+		/*m_gameobject.data.position.z += 10.f * deltaTime;
+		m_gameobject.data.velocity.z = 10;*/
 		m_facing = glm::vec3(0, 0, 1);
 	}
 
+	m_gameobject.networkData.SetElement("Position", pos);
+	m_gameobject.networkData.SetElement("Velocity", vel);
+
 	// Only send a network message when we change our movement state
-	if (oldVelocity != m_gameobject.data.velocity)
+	if (oldVelocity != m_gameobject.networkData.GetElement<vec3>("Velocity"))
 		SendClientGameObject();
 
 	if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
@@ -104,10 +119,11 @@ void Client::update(float deltaTime) {
 		otherClient.second.Update(deltaTime);
 
 		// Close 50% of the distance each frame
+		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
+		vec3 pos = otherClient.second.networkData.GetElement<vec3>("Position");
+
 		float alpha = 0.5f;
-		otherClient.second.data.localPosition =
-			alpha * otherClient.second.data.position +
-			(1.f - alpha) * otherClient.second.data.localPosition;
+		localPos = alpha * pos + (1.f - alpha) * localPos;
 	}
 }
 
@@ -122,14 +138,20 @@ void Client::draw() {
 										  0.1f, 1000.f);
 
 	// Draw body
-	Gizmos::addSphere(m_gameobject.data.position,
-		m_gameobject.data.radius, 8, 8, m_gameobject.data.color);
+	vec3 pos = m_gameobject.networkData.GetElement<vec3>("Position");
+	vec4 color = m_gameobject.networkData.GetElement<vec4>("Color");
+	float radius = m_gameobject.networkData.GetElement<float>("Radius");
+
+	Gizmos::addSphere(pos, radius, 8, 8, color);
 
 	// Draw other clients bodies
 	for (auto& otherClient : m_otherClientGameObjects)
 	{
-		Gizmos::addSphere(otherClient.second.data.localPosition,
-			otherClient.second.data.radius, 8, 8, otherClient.second.data.color);
+		vec3 localPos = m_gameobject.networkData.GetElement<vec3>("LocalPosition");
+		vec4 color = m_gameobject.networkData.GetElement<vec4>("Color");
+		float radius = m_gameobject.networkData.GetElement<float>("Radius");
+
+		Gizmos::addSphere(localPos, radius, 8, 8, color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
@@ -238,8 +260,8 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(m_gameobject.id);
-	m_gameobject.data.color = GameObject::GetColor(m_gameobject.id);
-	m_gameobject.data.radius = 1.f;
+	m_gameobject.networkData.SetElement("Color", GameObject::GetColor(m_gameobject.id));
+	m_gameobject.networkData.SetElement("Radius", 1.f);
 
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;
 }
@@ -259,7 +281,7 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 
 	if (clientID != m_gameobject.id)
 	{
-		GameObject object;
+		GameObject object = GameObject();
 		object.Read(_packet);
 
 		if (m_otherClientGameObjects.count(object.id) == 0)
@@ -270,9 +292,12 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		else
 		{
 			// existing object - copy position, color, velocity but not localPosition
-			m_otherClientGameObjects[object.id].data.position = object.data.position;
-			m_otherClientGameObjects[object.id].data.color = object.data.color;
-			m_otherClientGameObjects[object.id].data.velocity = object.data.velocity;
+			m_otherClientGameObjects[object.id].networkData.SetElement("Position", 
+				object.networkData.GetElement<vec3>("Position"));
+			m_otherClientGameObjects[object.id].networkData.SetElement("Color",
+				object.networkData.GetElement<vec4>("Color"));
+			m_otherClientGameObjects[object.id].networkData.SetElement("Velocity",
+				object.networkData.GetElement<vec4>("Velocity"));
 		}
 	}
 }
@@ -307,7 +332,7 @@ void Client::SendSpawnBulletPacket()
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_BULLET);
 
-	glm::vec3 spawnPos = m_gameobject.data.position + m_facing;
+	glm::vec3 spawnPos = m_gameobject.networkData.GetElement<vec3>("Position") + m_facing;
 
 	bs.Write((char*)&spawnPos, sizeof(glm::vec3));
 	bs.Write((char*)&m_facing, sizeof(glm::vec3));

@@ -56,7 +56,7 @@ void Server::HandleNetworkMessages()
 				RakNet::BitStream bs(packet->data, packet->length, false);
 
 				// Read the gameobject and store it in our list
-				GameObject object;
+				GameObject object = GameObject();
 				object.Read(packet);
 				m_gameObjects[object.id] = object;
 
@@ -109,10 +109,10 @@ void Server::SendNewClientID(RakNet::SystemAddress& _address)
 
 	// Send us to all other clients - new client
 	int id = m_nextClientID - 1;
-	GameObject obj;
-	obj.data.position = glm::vec3(0);
-	obj.data.color = GameObject::GetColor(id);
-	obj.data.radius = 1.f;
+	GameObject obj = GameObject();
+	obj.networkData.SetElement("Position", glm::vec3(0));
+	obj.networkData.SetElement("Color", GameObject::GetColor(id));
+	obj.networkData.SetElement("Radius", 1.f);
 	obj.id = id;
 	obj.Write(m_pPeerInterface, _address, true);
 
@@ -156,10 +156,10 @@ void Server::SpawnObject(glm::vec3 _position, glm::vec3 _velocity, float _radius
 {
 	m_gameObjects[m_nextServerID] = GameObject();
 	m_gameObjects[m_nextServerID].id = m_nextServerID;
-	m_gameObjects[m_nextServerID].data.position = _position;
-	m_gameObjects[m_nextServerID].data.localPosition = _position;
-	m_gameObjects[m_nextServerID].data.velocity = _velocity;
-	m_gameObjects[m_nextServerID].data.radius = _radius;
+	m_gameObjects[m_nextServerID].networkData.SetElement("Position", _position);
+	m_gameObjects[m_nextServerID].networkData.SetElement("LocalPosition", _position);
+	m_gameObjects[m_nextServerID].networkData.SetElement("Velocity", _velocity);
+	m_gameObjects[m_nextServerID].networkData.SetElement("Radius", _radius);
 
 	m_gameObjects[m_nextServerID].Write(m_pPeerInterface, 
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
@@ -240,7 +240,7 @@ void Server::UpdateObjects()
 			timeToNextUpdate = updateFrequency;
 
 		// Remove expired objects from our game object map
-		for (int i = 0; i < deathRow.size(); i++)
+		for (int i = 0; i < (int)deathRow.size(); i++)
 		{
 			Despawn(deathRow[i]);
 		}
