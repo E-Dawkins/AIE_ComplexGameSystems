@@ -59,10 +59,10 @@ public:
 
 	bool Contains(const char* _Key)
 	{
-		return (data.count(_Key) != 0);
+		return (data.count(_Key) > 0);
 	}
 
-	std::unordered_map<const char*, std::any>& Data()
+	std::unordered_map<const char*, std::any> Data()
 	{
 		return data;
 	}

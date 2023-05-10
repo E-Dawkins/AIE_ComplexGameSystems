@@ -157,11 +157,6 @@ void Client::draw() {
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
 
-void Client::HandleNetworkConnections()
-{
-
-}
-
 void Client::InitialiseClientConnection()
 {
 	m_pPeerInterface = RakNet::RakPeerInterface::GetInstance();
@@ -279,6 +274,8 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 	int clientID;
 	bsIn.Read(clientID);
 
+	std::cout << "Received client data id : " << clientID << std::endl;
+
 	if (clientID != m_gameobject.id)
 	{
 		GameObject object = GameObject();
@@ -337,7 +334,7 @@ void Client::SendSpawnBulletPacket()
 	bs.Write((char*)&spawnPos, sizeof(glm::vec3));
 	bs.Write((char*)&m_facing, sizeof(glm::vec3));
 
-	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED, 0,
+	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE, 0,
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 

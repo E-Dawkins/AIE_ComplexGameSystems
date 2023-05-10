@@ -21,7 +21,6 @@ public:
 	virtual void draw();
 
 protected:
-	void HandleNetworkConnections();
 	void InitialiseClientConnection();
 	void HandleNetworkMessages();
 	void OnSetClientIDPacket(RakNet::Packet* _packet);

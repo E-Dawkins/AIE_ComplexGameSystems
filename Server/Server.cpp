@@ -55,13 +55,21 @@ void Server::HandleNetworkMessages()
 			{
 				RakNet::BitStream bs(packet->data, packet->length, false);
 
+				std::cout << "Server read before" << std::endl;
+
 				// Read the gameobject and store it in our list
 				GameObject object = GameObject();
 				object.Read(packet);
-				m_gameObjects[object.id] = object;
 
-				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
+				/*vec3 pos1 = object.networkData.GetElement<vec3>("Position");
+				vec3 pos2 = m_gameObjects[object.id].networkData.GetElement<vec3>("Position");*/
+
+				std::cout << "Server read after" << std::endl;
+
+				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, UNRELIABLE_SEQUENCED,
 					0, packet->systemAddress, true);
+
+				std::cout << "Server send" << std::endl;
 				break;
 			}
 			case ID_CLIENT_DISCONNECT:
@@ -98,7 +106,7 @@ void Server::SendNewClientID(RakNet::SystemAddress& _address)
 	m_nextClientID++;
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, 
-		RELIABLE_ORDERED, 0, _address, false);
+		RELIABLE, 0, _address, false);
 
 	// Send existing gameobjects to new client - old client/s
 	for (auto it = m_gameObjects.begin(); it != m_gameObjects.end(); it++)
