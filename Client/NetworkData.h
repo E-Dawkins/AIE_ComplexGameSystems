@@ -3,19 +3,14 @@
 #include <unordered_map>
 #include <glm/ext.hpp>
 #include <iostream>
+#include <vector>
 
 class NetworkData
 {
 public:
 	void Insert(const char* _Key, std::any _Val)
 	{
-		if (Contains(_Key))
-		{
-			std::cout << "Key already defined!\n";
-			throw;
-		}
-
-		data.insert({ _Key, _Val });
+		m_data.insert({ _Key, _Val });
 	}
 
 	void SetElement(const char* _Key, std::any _Val)
@@ -26,7 +21,7 @@ public:
 			return;
 		}
 
-		data[_Key] = _Val;
+		m_data[_Key] = _Val;
 	}
 
 	void Erase(const char* _Key)
@@ -37,12 +32,12 @@ public:
 			throw;
 		}
 
-		data.erase(_Key);
+		m_data.erase(_Key);
 	}
 
 	void Clear()
 	{
-		data.clear();
+		m_data.clear();
 	}
 
 	template <typename T>
@@ -54,19 +49,24 @@ public:
 			throw;
 		}
 
-		return std::any_cast<T>(data[_Key]);
+		return std::any_cast<T>(m_data[_Key]);
 	}
 
 	bool Contains(const char* _Key)
 	{
-		return (data.count(_Key) > 0);
+		return m_data.contains(_Key);
 	}
 
-	std::unordered_map<const char*, std::any> Data()
+	std::unordered_map<const char*, std::any>& Data()
 	{
-		return data;
+		return m_data;
 	}
 
+	int Size()
+	{
+		return (int)m_data.size();
+	}
+	
 protected:
-	std::unordered_map<const char*, std::any> data;
+	std::unordered_map<const char*, std::any> m_data;
 };

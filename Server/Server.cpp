@@ -58,18 +58,16 @@ void Server::HandleNetworkMessages()
 				std::cout << "Server read before" << std::endl;
 
 				// Read the gameobject and store it in our list
-				GameObject object = GameObject();
+				GameObject object;
 				object.Read(packet);
 
 				/*vec3 pos1 = object.networkData.GetElement<vec3>("Position");
 				vec3 pos2 = m_gameObjects[object.id].networkData.GetElement<vec3>("Position");*/
-
+				
 				std::cout << "Server read after" << std::endl;
 
-				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, UNRELIABLE_SEQUENCED,
+				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
 					0, packet->systemAddress, true);
-
-				std::cout << "Server send" << std::endl;
 				break;
 			}
 			case ID_CLIENT_DISCONNECT:

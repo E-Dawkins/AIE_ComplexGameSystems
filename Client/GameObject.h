@@ -2,6 +2,7 @@
 #include <glm/ext.hpp>
 #include <RakPeerInterface.h>
 #include "NetworkData.h"
+#include <vector>
 
 using glm::vec3;
 using glm::vec4;
@@ -10,6 +11,7 @@ class GameObject
 {
 public:
 	GameObject();
+	~GameObject() = default;
 
 	NetworkData networkData;
 
