@@ -288,13 +288,14 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		}
 		else
 		{
+			vec3 pos = object.networkData.GetElement<vec3>("Position");
+			vec3 vel = object.networkData.GetElement<vec3>("Velocity");
+			vec4 col = object.networkData.GetElement<vec4>("Color");
+
 			// existing object - copy position, color, velocity but not localPosition
-			m_otherClientGameObjects[object.id].networkData.SetElement("Position", 
-				object.networkData.GetElement<vec3>("Position"));
-			m_otherClientGameObjects[object.id].networkData.SetElement("Color",
-				object.networkData.GetElement<vec4>("Color"));
-			m_otherClientGameObjects[object.id].networkData.SetElement("Velocity",
-				object.networkData.GetElement<vec4>("Velocity"));
+			m_otherClientGameObjects[object.id].networkData.SetElement("Position", pos);
+			m_otherClientGameObjects[object.id].networkData.SetElement("Color", col);
+			m_otherClientGameObjects[object.id].networkData.SetElement("Velocity", vel);
 		}
 	}
 }

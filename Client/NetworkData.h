@@ -15,12 +15,6 @@ public:
 
 	void SetElement(const char* _Key, std::any _Val)
 	{
-		if (!Contains(_Key))
-		{
-			Insert(_Key, _Val);
-			return;
-		}
-
 		m_data[_Key] = _Val;
 	}
 

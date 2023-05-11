@@ -17,9 +17,7 @@ void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_CLIENT_CLIENT_DATA);
 	bs.Write(id);
-	/*bs.Write((char*)&networkData.Data(), sizeof(networkData.Data()));*/
-
-	std::cout << "---Before---\n";
+	
 	bs.Write(networkData.Size());
 
 	for (auto i : networkData.Data())
@@ -38,13 +36,9 @@ void GameObject::Read(RakNet::Packet* _packet)
 	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(id);
-	/*bsIn.Read((char*)&networkData.Data(), sizeof(networkData.Data()));*/
 
-	std::cout << "---After---\n";
 	unsigned int dataAmount = 0;
 	bsIn.Read(dataAmount);
-
-	std::cout << dataAmount << std::endl;
 
 	for (int i = 0; i < dataAmount; i++)
 	{
@@ -54,8 +48,7 @@ void GameObject::Read(RakNet::Packet* _packet)
 		std::any dataValue;
 		bsIn.Read(dataValue);
 
-		networkData.Insert(dataName.C_String(), dataValue);
-		std::cout << dataName.C_String() << std::endl;
+		networkData.SetElement(dataName, dataValue);
 	}
 	int a = 4;
 }
