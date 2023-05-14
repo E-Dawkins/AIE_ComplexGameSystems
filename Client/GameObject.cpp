@@ -1,15 +1,16 @@
 #include "GameObject.h"
 #include <BitStream.h>
 #include "../Server/GameMessages.h"
-#include <iostream>
 
 GameObject::GameObject()
 {
-	networkData.Insert("Color", vec4());
+	networkData.Insert("Color", glm::mat4(4090,3090,2080,4,5,6,7,8,9,10,11,12,13,14,15,16));
 	networkData.Insert("Position", vec3());
 	networkData.Insert("LocalPosition", vec3());
 	networkData.Insert("Velocity", vec3());
 	networkData.Insert("Radius", 0.f);
+
+	auto test = networkData.GetElement<vec3>("Color");
 }
 
 void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::SystemAddress& _address, bool _broadcast)
@@ -22,9 +23,7 @@ void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::
 
 	for (auto i : networkData.Data())
 	{
-		RakNet::RakString dataName = i.first;
-		bs.Write(dataName);
-		bs.Write(i.second);
+		
 	}
 
 	_pPeerInterface->Send(&bs, HIGH_PRIORITY, 
@@ -42,13 +41,7 @@ void GameObject::Read(RakNet::Packet* _packet)
 
 	for (int i = 0; i < dataAmount; i++)
 	{
-		RakNet::RakString dataName;
-		bsIn.Read(dataName);
-
-		std::any dataValue;
-		bsIn.Read(dataValue);
-
-		networkData.SetElement(dataName, dataValue);
+		
 	}
 	int a = 4;
 }
