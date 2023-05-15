@@ -71,32 +71,24 @@ void Client::update(float deltaTime) {
 	{
 		pos.x -= 10.f * deltaTime;
 		vel.x = -10;
-		/*m_gameobject.data.position.x -= 10.f * deltaTime;
-		m_gameobject.data.velocity.x = -10;*/
 		m_facing = glm::vec3(-1, 0, 0);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
 	{
 		pos.x += 10.f * deltaTime;
 		vel.x = 10;
-		/*m_gameobject.data.position.x += 10.f * deltaTime;
-		m_gameobject.data.velocity.x = 10;*/
 		m_facing = glm::vec3(1, 0, 0);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_UP))
 	{
 		pos.z -= 10.f * deltaTime;
 		vel.z = -10;
-		/*m_gameobject.data.position.z -= 10.f * deltaTime;
-		m_gameobject.data.velocity.z = -10;*/
 		m_facing = glm::vec3(0, 0, -1);
 	}
 	if (input->isKeyDown(aie::INPUT_KEY_DOWN))
 	{
 		pos.z += 10.f * deltaTime;
 		vel.z = 10;
-		/*m_gameobject.data.position.z += 10.f * deltaTime;
-		m_gameobject.data.velocity.z = 10;*/
 		m_facing = glm::vec3(0, 0, 1);
 	}
 
@@ -147,11 +139,11 @@ void Client::draw() {
 	// Draw other clients bodies
 	for (auto& otherClient : m_otherClientGameObjects)
 	{
-		vec3 localPos = m_gameobject.networkData.GetElement<vec3>("LocalPosition");
-		vec4 color = m_gameobject.networkData.GetElement<vec4>("Color");
-		float radius = m_gameobject.networkData.GetElement<float>("Radius");
+		vec3 pos = otherClient.second.networkData.GetElement<vec3>("Position");
+		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
+		float radius = otherClient.second.networkData.GetElement<float>("Radius");
 
-		Gizmos::addSphere(localPos, radius, 8, 8, color);
+		Gizmos::addSphere(pos, radius, 8, 8, color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
@@ -256,6 +248,7 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(m_gameobject.id);
 	m_gameobject.networkData.SetElement("Color", GameObject::GetColor(m_gameobject.id));
+	vec4 col = m_gameobject.networkData.GetElement<vec4>("Color");
 	m_gameobject.networkData.SetElement("Radius", 1.f);
 
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;

@@ -4,13 +4,11 @@
 
 GameObject::GameObject()
 {
-	networkData.Insert("Color", glm::mat4(4090,3090,2080,4,5,6,7,8,9,10,11,12,13,14,15,16));
+	networkData.Insert("Color", vec4());
 	networkData.Insert("Position", vec3());
 	networkData.Insert("LocalPosition", vec3());
 	networkData.Insert("Velocity", vec3());
 	networkData.Insert("Radius", 0.f);
-
-	auto test = networkData.GetElement<vec3>("Color");
 }
 
 void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::SystemAddress& _address, bool _broadcast)
@@ -21,9 +19,17 @@ void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::
 	
 	bs.Write(networkData.Size());
 
-	for (auto i : networkData.Data())
+	for (const auto &i : networkData.Data())
 	{
-		
+		RakNet::RakString key = i.first;
+		bs.Write(key);
+
+		bs.Write(i.second.size());
+
+		for (auto byte : i.second)
+		{
+			bs.Write(byte);
+		}
 	}
 
 	_pPeerInterface->Send(&bs, HIGH_PRIORITY, 
@@ -36,20 +42,34 @@ void GameObject::Read(RakNet::Packet* _packet)
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(id);
 
-	unsigned int dataAmount = 0;
+	int dataAmount = 0;
 	bsIn.Read(dataAmount);
 
 	for (int i = 0; i < dataAmount; i++)
 	{
+		RakNet::RakString key;
+		bsIn.Read(key);
+
+		size_t byteCount;
+		bsIn.Read(byteCount);
+
+		std::vector<unsigned char> bytes;
+		bytes.resize(byteCount);
+
+		for (int j = 0; j < (int)byteCount; j++)
+		{
+			bsIn.Read((char*)&bytes[j], sizeof(unsigned char));
+		}
 		
+		networkData.SetElement(key, bytes);
 	}
-	int a = 4;
 }
 
 void GameObject::Update(float _deltaTime)
 {
-	networkData.GetElement<vec3>("Position") 
-		+= networkData.GetElement<vec3>("Velocity") * _deltaTime;
+	vec3 pos = networkData.GetElement<vec3>("Position");
+	pos += networkData.GetElement<vec3>("Velocity") * _deltaTime;
+	networkData.SetElement("Position", pos);
 }
 
 vec4 colors[] = {

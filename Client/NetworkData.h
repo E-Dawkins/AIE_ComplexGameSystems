@@ -1,7 +1,8 @@
 #pragma once
 #include <unordered_map>
 #include <iostream>
-#include <array>
+#include <iomanip>
+#include <glm/ext.hpp>
 
 class NetworkData
 {
@@ -9,16 +10,37 @@ public:
 	template <typename T>
 	void Insert(const char* _Key, T _Val)
 	{
-		byte* bytes = ToBytes(_Val);
-		auto test = FromBytes<T>(bytes);
-		m_data.insert({ _Key, bytes });
+		if (Contains(_Key))
+			return;
+
+		std::vector<unsigned char> data = ToBytes(_Val);
+		m_data.insert({ _Key, data });
 	}
 
 	template <typename T>
 	void SetElement(const char* _Key, T _Val)
 	{
-		byte* bytes = ToBytes(_Val);
-		m_data[_Key] = bytes;
+		for (auto& member : m_data)
+		{
+			if (*member.first == *_Key)
+			{
+				std::vector<unsigned char> data = ToBytes(_Val);
+				member.second = data;
+				break;
+			}
+		}
+	}
+
+	void SetElement(const char* _Key, std::vector<unsigned char> _Val)
+	{
+		for (auto& member : m_data)
+		{
+			if (*member.first == *_Key)
+			{
+				member.second = _Val;
+				break;
+			}
+		}
 	}
 
 	void Erase(const char* _Key)
@@ -52,10 +74,16 @@ public:
 
 	bool Contains(const char* _Key)
 	{
-		return m_data.contains(_Key);
+		for (auto& member : m_data)
+		{
+			if (*member.first == *_Key)
+				return true;
+		}
+
+		return false;
 	}
 
-	std::unordered_map<const char*, const byte*>& Data()
+	std::unordered_map<const char*, std::vector<unsigned char>>& Data()
 	{
 		return m_data;
 	}
@@ -66,35 +94,36 @@ public:
 	}
 
 	template<typename T>
-	byte* ToBytes(T object)
+	std::vector<unsigned char> ToBytes(T object)
 	{
-		// byte bytes[sizeof(T)];
-		byte* bytes = new byte[sizeof(object)];
+		std::vector<unsigned char> bytes;
+		bytes.resize(sizeof(object));
 
-		// --- Version 1 ---
-		// auto begin = reinterpret_cast<byte*>(std::addressof(object));
-		// auto end = begin + sizeof(T);
-		// std::copy(begin, end, bytes);
+		auto begin = reinterpret_cast<unsigned char*>(std::addressof(object));
+		auto end = begin + sizeof(unsigned char);
 
-		// --- Version 2 ---
-		std::memcpy(bytes, &object, sizeof(object));
-		auto test = FromBytes<T>(bytes);
+		for (int i = 0; i < sizeof(object); i++)
+		{
+			std::copy(begin, end, &bytes[i]);
 
-		// --- Version 3 ---
-		// byte* temp = reinterpret_cast<byte*>(&object);
-		// std::copy(temp, temp + sizeof(object), bytes);
+			begin = end;
+			end += sizeof(unsigned char);
+		}
 
 		return bytes;
 	}
 
 	template<typename T>
-	T FromBytes(const byte* bytes)
+	T FromBytes(std::vector<unsigned char>& bytes)
 	{
 		T out = T();
-		std::memcpy(&out, bytes, sizeof(T));
+		
+		auto begin = reinterpret_cast<unsigned char*>(std::addressof(out));
+		std::copy_n(bytes.begin(), bytes.size(), begin);
+
 		return out;
 	}
 
 protected:
-	std::unordered_map<const char*, const byte*> m_data;
+	std::unordered_map<const char*, std::vector<unsigned char>> m_data;
 };
