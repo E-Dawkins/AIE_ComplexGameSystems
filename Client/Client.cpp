@@ -13,9 +13,6 @@ using glm::vec4;
 using glm::mat4;
 using aie::Gizmos;
 
-Client::Client() = default;
-Client::~Client() = default;
-
 bool Client::startup() {
 	
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
@@ -41,7 +38,6 @@ bool Client::startup() {
 void Client::shutdown() {
 
 	OnClientDisconnect();
-
 	Gizmos::destroy();
 }
 
@@ -59,7 +55,8 @@ void Client::update(float deltaTime) {
 	aie::Input* input = aie::Input::getInstance();
 
 	// Store previous velocity
-	glm::vec3 oldVelocity = m_gameobject.networkData.GetElement<vec3>("Velocity");
+	vec3 oldVelocity = m_gameobject.networkData.GetElement<vec3>("Velocity");
+	vec3 oldPosition = m_gameobject.networkData.GetElement<vec3>("Position");
 
 	// Zero it in case no keys are pressed
 	m_gameobject.networkData.SetElement("Velocity", vec3(0));
@@ -96,7 +93,7 @@ void Client::update(float deltaTime) {
 	m_gameobject.networkData.SetElement("Velocity", vel);
 
 	// Only send a network message when we change our movement state
-	if (oldVelocity != m_gameobject.networkData.GetElement<vec3>("Velocity"))
+	if (oldVelocity != vel || oldPosition != pos)
 		SendClientGameObject();
 
 	if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
@@ -108,14 +105,19 @@ void Client::update(float deltaTime) {
 	// Update all other GameObjects
 	for (auto& otherClient : m_otherClientGameObjects)
 	{
+		switch (m_interpolationType)
+		{
+		case Interpolation::LINEAR:
+			Interpolation_Linear(otherClient.second);
+			break;
+		case Interpolation::COSINE:
+			Interpolation_Cosine(otherClient.second, deltaTime);
+			break;
+		default:
+			Interpolation_None(otherClient.second);
+		}
+
 		otherClient.second.Update(deltaTime);
-
-		// Close 50% of the distance each frame
-		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
-		vec3 pos = otherClient.second.networkData.GetElement<vec3>("Position");
-
-		float alpha = 0.5f;
-		localPos = alpha * pos + (1.f - alpha) * localPos;
 	}
 }
 
@@ -139,25 +141,21 @@ void Client::draw() {
 	// Draw other clients bodies
 	for (auto& otherClient : m_otherClientGameObjects)
 	{
-		vec3 pos = otherClient.second.networkData.GetElement<vec3>("Position");
+		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
 		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
 		float radius = otherClient.second.networkData.GetElement<float>("Radius");
 
-		Gizmos::addSphere(pos, radius, 8, 8, color);
+		Gizmos::addSphere(localPos, radius, 8, 8, color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
 
+#pragma region Network Methods
+
 void Client::InitialiseClientConnection()
 {
 	m_pPeerInterface = RakNet::RakPeerInterface::GetInstance();
-
-	// Ask client what ip they want to connect to
-	std::cout << "IP to connect to: ";
-	std::string ipInput;
-	std::cin >> ipInput;
-	IP = ipInput.c_str();
 
 	// Create an empty socket descriptor, no data is
 	// needed as we are connecting to a server
@@ -319,12 +317,14 @@ void Client::OnReceivedClientDisconnect(RakNet::Packet* _packet)
 void Client::SendSpawnBulletPacket()
 {
 	RakNet::BitStream bs;
-	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_BULLET);
+	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_GAMEOBJECT);
 
 	glm::vec3 spawnPos = m_gameobject.networkData.GetElement<vec3>("Position") + m_facing;
+	float velocity = 3;
 
 	bs.Write((char*)&spawnPos, sizeof(glm::vec3));
 	bs.Write((char*)&m_facing, sizeof(glm::vec3));
+	bs.Write((char*)&velocity, sizeof(float));
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE, 0,
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
@@ -340,3 +340,41 @@ void Client::OnDespawn(RakNet::Packet* _packet)
 
 	m_otherClientGameObjects.erase(id);
 }
+
+#pragma endregion
+
+#pragma region Interpolation Methods
+
+void Client::Interpolation_None(GameObject& _gameObject)
+{
+	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
+	_gameObject.networkData.SetElement("LocalPosition", pos);
+}
+
+void Client::Interpolation_Linear(GameObject& _gameObject)
+{
+	vec3 localPos = _gameObject.networkData.GetElement<vec3>("LocalPosition");
+	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
+
+	// Close 50% of the distance each frame
+	float alpha = 0.5f;
+	localPos = alpha * pos + (1.f - alpha) * localPos;
+
+	_gameObject.networkData.SetElement("LocalPosition", localPos);
+}
+
+void Client::Interpolation_Cosine(GameObject& _gameObject, float _dt)
+{
+	vec3 localPos = _gameObject.networkData.GetElement<vec3>("LocalPosition");
+	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
+
+	static float mu = 0;
+	mu = (mu >= 1.f ? 0 : mu + _dt);
+
+	float mu2 = (1 - cosf(mu * glm::pi<float>())) * 0.5f;
+	localPos = (pos * (1 - mu2) + localPos * mu2);
+
+	_gameObject.networkData.SetElement("LocalPosition", localPos);
+}
+
+#pragma endregion

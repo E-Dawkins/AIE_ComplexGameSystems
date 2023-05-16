@@ -14,7 +14,7 @@ protected:
 	void SendNewClientID(RakNet::SystemAddress& _address);
 	void ClientDisconnect(RakNet::Packet* _packet);
 
-	void OnSpawnBullet(RakNet::Packet* _packet);
+	void OnSpawnGameObject(RakNet::Packet* _packet);
 	void SpawnObject(glm::vec3 _position, glm::vec3 _velocity, float _radius);
 	void Despawn(int _id);
 

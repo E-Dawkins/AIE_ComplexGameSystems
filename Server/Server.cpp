@@ -67,8 +67,8 @@ void Server::HandleNetworkMessages()
 			case ID_CLIENT_DISCONNECT:
 				ClientDisconnect(packet);
 				break;
-			case ID_CLIENT_SPAWN_BULLET:
-				OnSpawnBullet(packet);
+			case ID_CLIENT_SPAWN_GAMEOBJECT:
+				OnSpawnGameObject(packet);
 				break;
 			default:
 				std::cout << "Received a message with an unknown id: " 
@@ -137,16 +137,18 @@ void Server::ClientDisconnect(RakNet::Packet* _packet)
 		0, _packet->systemAddress, true);
 }
 
-void Server::OnSpawnBullet(RakNet::Packet* _packet)
+void Server::OnSpawnGameObject(RakNet::Packet* _packet)
 {
 	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	
 	glm::vec3 pos;
-	glm::vec3 vel;
+	glm::vec3 dir;
+	float vel;
 	bsIn.Read((char*)&pos, sizeof(glm::vec3));
-	bsIn.Read((char*)&vel, sizeof(glm::vec3));
-	SpawnObject(pos, vel * 3, 0.2f);
+	bsIn.Read((char*)&dir, sizeof(glm::vec3));
+	bsIn.Read((char*)&vel, sizeof(float));
+	SpawnObject(pos, dir * vel, 0.2f);
 
 	// Sets the spawned bullets lifetime to 5 seconds
 	m_gameObjects[m_nextServerID - 1].lifetime = 5.f;
