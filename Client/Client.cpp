@@ -267,8 +267,6 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 	int clientID;
 	bsIn.Read(clientID);
 
-	std::cout << "Received client data id : " << clientID << std::endl;
-
 	if (clientID != m_gameobject.id)
 	{
 		GameObject object = GameObject();

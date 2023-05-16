@@ -55,14 +55,10 @@ void Server::HandleNetworkMessages()
 			{
 				RakNet::BitStream bs(packet->data, packet->length, false);
 
-				std::cout << "Server read before" << std::endl;
-
 				// Read the gameobject and store it in our list
 				GameObject object;
 				object.Read(packet);
 				m_gameObjects[object.id] = object;
-				
-				std::cout << "Server read after" << std::endl;
 
 				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
 					0, packet->systemAddress, true);

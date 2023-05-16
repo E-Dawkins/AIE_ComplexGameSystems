@@ -4,7 +4,7 @@
 
 GameObject::GameObject()
 {
-	networkData.Insert("Color", vec4());
+	networkData.Insert("Color", vec3());
 	networkData.Insert("Position", vec3());
 	networkData.Insert("LocalPosition", vec3());
 	networkData.Insert("Velocity", vec3());
@@ -61,7 +61,7 @@ void GameObject::Read(RakNet::Packet* _packet)
 			bsIn.Read((char*)&bytes[j], sizeof(unsigned char));
 		}
 		
-		networkData.SetElement(key, bytes);
+		networkData.SetElementBytes(key, bytes);
 	}
 }
 
