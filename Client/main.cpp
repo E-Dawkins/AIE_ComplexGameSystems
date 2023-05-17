@@ -12,7 +12,7 @@ int main() {
 
 	app->SetInterpolation(Client::Interpolation::COSINE);
 	app->SetFPS(60);
-	app->SetNetworkFrameDelay(5);
+	app->SetNetworkFrameDelay(3);
 
 	app->run("AIE", 1280, 720, false);
 	delete app;

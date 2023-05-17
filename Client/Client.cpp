@@ -114,7 +114,7 @@ void Client::update(float deltaTime) {
 		switch (m_interpolationType)
 		{
 		case Interpolation::LINEAR:
-			Interpolation_Linear(otherClient.second);
+			Interpolation_Linear(otherClient.second, deltaTime);
 			break;
 		case Interpolation::COSINE:
 			Interpolation_Cosine(otherClient.second, deltaTime);
@@ -355,14 +355,18 @@ void Client::Interpolation_None(GameObject& _gameObject)
 	_gameObject.networkData.SetElement("LocalPosition", pos);
 }
 
-void Client::Interpolation_Linear(GameObject& _gameObject)
+void Client::Interpolation_Linear(GameObject& _gameObject, float _dt)
 {
 	vec3 localPos = _gameObject.networkData.GetElement<vec3>("LocalPosition");
 	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
 
-	// Close 50% of the distance each frame
-	float alpha = 0.5f;
-	localPos = alpha * pos + (1.f - alpha) * localPos;
+	vec3 velocity = _gameObject.networkData.GetElement<vec3>("Velocity");
+	vec3 targetPos = pos + (velocity * _dt);
+
+	static float t = 0.f;
+	t = (float)FRAMECOUNT * (1.f / (float)NETWORKFRAME);
+
+	localPos = t * targetPos + (1.f - t) * localPos;
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }

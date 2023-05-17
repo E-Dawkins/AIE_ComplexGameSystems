@@ -47,7 +47,7 @@ protected:
 	int m_interpolationType = Interpolation::LINEAR;
 
 	void Interpolation_None(GameObject& _gameObject);
-	void Interpolation_Linear(GameObject& _gameObject);
+	void Interpolation_Linear(GameObject& _gameObject, float _dt);
 	void Interpolation_Cosine(GameObject& _gameObject, float _dt);
 
 	RakNet::RakPeerInterface* m_pPeerInterface;
