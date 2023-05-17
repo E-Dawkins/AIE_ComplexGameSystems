@@ -45,7 +45,7 @@ void Client::shutdown() {
 void Client::update(float deltaTime) {
  
 	// Delay the update to fake ~60fps
-	static int milliSleep = (int)(1000.f / (float)FPS);
+	int milliSleep = (int)(1000.f / (float)FPS);
 	std::this_thread::sleep_for(std::chrono::milliseconds(milliSleep));
 
 	FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
