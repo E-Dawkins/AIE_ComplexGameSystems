@@ -42,7 +42,6 @@ void Server::HandleNetworkMessages()
 			switch (packet->data[0])
 			{
 			case ID_NEW_INCOMING_CONNECTION:
-				std::cout << "Incoming connection." << std::endl;
 				SendNewClientID(packet->systemAddress);
 				break;
 			case ID_DISCONNECTION_NOTIFICATION:
@@ -52,18 +51,8 @@ void Server::HandleNetworkMessages()
 				std::cout << "A client has lost connection." << std::endl;
 				break;
 			case ID_CLIENT_CLIENT_DATA:
-			{
-				RakNet::BitStream bs(packet->data, packet->length, false);
-
-				// Read the gameobject and store it in our list
-				GameObject object;
-				object.Read(packet);
-				m_gameObjects[object.id] = object;
-
-				m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
-					0, packet->systemAddress, true);
+				OnReceivedClientData(packet);
 				break;
-			}
 			case ID_CLIENT_DISCONNECT:
 				ClientDisconnect(packet);
 				break;
@@ -92,6 +81,8 @@ void Server::SendClientPing(const char* _message)
 
 void Server::SendNewClientID(RakNet::SystemAddress& _address)
 {
+	std::cout << "Client " << m_nextClientID << " has connected." << std::endl;
+
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_SERVER_SET_CLIENT_ID);
 	bs.Write(m_nextClientID);
@@ -132,6 +123,19 @@ void Server::ClientDisconnect(RakNet::Packet* _packet)
 	bs.Write(id);
 
 	m_gameObjects.erase(id);
+
+	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
+		0, _packet->systemAddress, true);
+}
+
+void Server::OnReceivedClientData(RakNet::Packet* _packet)
+{
+	RakNet::BitStream bs(_packet->data, _packet->length, false);
+
+	// Read the gameobject and store it in our list
+	GameObject object;
+	object.Read(_packet);
+	m_gameObjects[object.id] = object;
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
 		0, _packet->systemAddress, true);
@@ -185,12 +189,13 @@ void Server::Despawn(int _id)
 float Server::GetElapsedTime()
 {
 	LARGE_INTEGER currentTime, elapsedMicroSeconds, frequency;
+	static LARGE_INTEGER lastTime;
 
 	QueryPerformanceFrequency(&frequency);
 	QueryPerformanceCounter(&currentTime);
 
-	elapsedMicroSeconds.QuadPart = currentTime.QuadPart - m_lastTime.QuadPart;
-	m_lastTime = currentTime;
+	elapsedMicroSeconds.QuadPart = currentTime.QuadPart - lastTime.QuadPart;
+	lastTime = currentTime;
 
 	// We now have the elapsed number of ticks, as well as
 	// the number of ticks-per-second. We can then use these
@@ -206,9 +211,9 @@ float Server::GetElapsedTime()
 
 void Server::UpdateObjects()
 {
-	const int deltaTime = 17; // milliseconds per broadcast
+	const int deltaTime = (int)(1000.f/60.f); // milliseconds per broadcast : ~60 tps
 	float timeToNextUpdate = 0; // countdown until we broadcast to all game objects
-	float updateFrequency = 1.f; // seconds between updates
+	float updateFrequency = 1.f; // seconds between sending network data to clients
 
 	while (true)
 	{
@@ -218,15 +223,16 @@ void Server::UpdateObjects()
 		float dt = GetElapsedTime();
 		timeToNextUpdate -= dt;
 
-		for (auto it = m_gameObjects.begin(); it != m_gameObjects.end(); it++)
+		for (auto& member : m_gameObjects)
 		{
-			GameObject& obj = it->second;
+			GameObject& obj = member.second;
 
-			// Broadcast to every server-controlled client
+			// Update every server-controlled gameobject
 			if (obj.id >= 1000)
 			{
 				obj.Update(dt);
 
+				// Only send network data when 'timeToNextUpdate' reaches 0
 				if (timeToNextUpdate < 0)
 					obj.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 
@@ -238,16 +244,17 @@ void Server::UpdateObjects()
 			}
 		}
 
+		// Reset 'timeToNextUpdate' to 'updateFrequency'
 		if (timeToNextUpdate < 0)
 			timeToNextUpdate = updateFrequency;
 
 		// Remove expired objects from our game object map
-		for (int i = 0; i < (int)deathRow.size(); i++)
-		{
-			Despawn(deathRow[i]);
-		}
+		for (auto i : deathRow)
+			Despawn(i);
+
 		deathRow.clear();
 
+		// Sleep this thread for 'deltaTime' milliseconds
 		std::this_thread::sleep_for(std::chrono::milliseconds(deltaTime));
 	}
 }

@@ -13,6 +13,7 @@ protected:
 	void SendClientPing(const char* _message);
 	void SendNewClientID(RakNet::SystemAddress& _address);
 	void ClientDisconnect(RakNet::Packet* _packet);
+	void OnReceivedClientData(RakNet::Packet* _packet);
 
 	void OnSpawnGameObject(RakNet::Packet* _packet);
 	void SpawnObject(glm::vec3 _position, glm::vec3 _velocity, float _radius);
@@ -27,7 +28,6 @@ protected:
 	int m_nextClientID = 1;
 
 	int m_nextServerID = 1000;
-	LARGE_INTEGER m_lastTime;
 
 	const unsigned short PORT = 5456;
 };

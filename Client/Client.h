@@ -59,4 +59,7 @@ protected:
 
 	glm::mat4	m_viewMatrix;
 	glm::mat4	m_projectionMatrix;
+
+	int FRAMECOUNT = -1; // -1 so first frame is 0
+	int NETWORKFRAME = 3; // frame gap between sending network data
 };

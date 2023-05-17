@@ -27,7 +27,6 @@ bool Client::startup() {
 										  0.1f, 1000.f);
 
 	m_gameobject = GameObject();
-	m_gameobject.networkData.SetElement("Position", vec3(0));
 	m_facing = vec3(1, 0, 0);
 
 	InitialiseClientConnection();
@@ -42,27 +41,25 @@ void Client::shutdown() {
 }
 
 void Client::update(float deltaTime) {
-
-	// query time since application started
-	float time = getTime();
+ 
+	FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
 
 	// wipe the gizmos clean for this frame
 	Gizmos::clear();
+	std::cout << getFPS() << std::endl;
 
 	HandleNetworkMessages();
 	
 	// quit if we press escape
 	aie::Input* input = aie::Input::getInstance();
 
-	// Store previous velocity
-	vec3 oldVelocity = m_gameobject.networkData.GetElement<vec3>("Velocity");
-	vec3 oldPosition = m_gameobject.networkData.GetElement<vec3>("Position");
-
-	// Zero it in case no keys are pressed
-	m_gameobject.networkData.SetElement("Velocity", vec3(0));
-
 	vec3 pos = m_gameobject.networkData.GetElement<vec3>("Position");
-	vec3 vel = m_gameobject.networkData.GetElement<vec3>("Velocity");
+	// Zeroed in case no keys are pressed
+	vec3 vel = vec3(0);
+
+	// Store previous position and velocity
+	static vec3 oldPosition = m_gameobject.networkData.GetElement<vec3>("Position");
+	static vec3 oldVelocity = m_gameobject.networkData.GetElement<vec3>("Velocity");
 
 	if (input->isKeyDown(aie::INPUT_KEY_LEFT))
 	{
@@ -92,9 +89,14 @@ void Client::update(float deltaTime) {
 	m_gameobject.networkData.SetElement("Position", pos);
 	m_gameobject.networkData.SetElement("Velocity", vel);
 
-	// Only send a network message when we change our movement state
-	if (oldVelocity != vel || oldPosition != pos)
+	// Only send a network message when we change
+	// our movement state, and it is a network frame
+	if ((oldVelocity != vel || oldPosition != pos) && FRAMECOUNT == 0)
+	{
 		SendClientGameObject();
+		oldPosition = pos;
+		oldVelocity = vel;
+	}
 
 	if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
 		SendSpawnBulletPacket();
@@ -117,7 +119,7 @@ void Client::update(float deltaTime) {
 			Interpolation_None(otherClient.second);
 		}
 
-		otherClient.second.Update(deltaTime);
+		//otherClient.second.Update(deltaTime);
 	}
 }
 
@@ -368,11 +370,14 @@ void Client::Interpolation_Cosine(GameObject& _gameObject, float _dt)
 	vec3 localPos = _gameObject.networkData.GetElement<vec3>("LocalPosition");
 	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
 
-	static float mu = 0;
-	mu = (mu >= 1.f ? 0 : mu + _dt);
+	vec3 velocity = _gameObject.networkData.GetElement<vec3>("Velocity");
+	vec3 targetPos = pos + (velocity * _dt);
+
+	static float mu = 0.f;
+	mu = (float)FRAMECOUNT * (1.f / (float)NETWORKFRAME);
 
 	float mu2 = (1 - cosf(mu * glm::pi<float>())) * 0.5f;
-	localPos = (pos * (1 - mu2) + localPos * mu2);
+	localPos = (localPos * (1 - mu2) + targetPos * mu2);
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }
