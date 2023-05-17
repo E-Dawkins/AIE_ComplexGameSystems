@@ -62,4 +62,5 @@ protected:
 
 	int FRAMECOUNT = -1; // -1 so first frame is 0
 	int NETWORKFRAME = 3; // frame gap between sending network data
+	int FPS = 60;
 };

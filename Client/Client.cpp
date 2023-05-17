@@ -7,6 +7,8 @@
 
 #include <MessageIdentifiers.h>
 #include <BitStream.h>
+#include <thread>
+#include <chrono>
 
 using glm::vec3;
 using glm::vec4;
@@ -42,11 +44,14 @@ void Client::shutdown() {
 
 void Client::update(float deltaTime) {
  
+	// Delay the update to fake ~60fps
+	static int milliSleep = (int)(1000.f / (float)FPS);
+	std::this_thread::sleep_for(std::chrono::milliseconds(milliSleep));
+
 	FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
 
 	// wipe the gizmos clean for this frame
 	Gizmos::clear();
-	std::cout << getFPS() << std::endl;
 
 	HandleNetworkMessages();
 	
@@ -54,8 +59,7 @@ void Client::update(float deltaTime) {
 	aie::Input* input = aie::Input::getInstance();
 
 	vec3 pos = m_gameobject.networkData.GetElement<vec3>("Position");
-	// Zeroed in case no keys are pressed
-	vec3 vel = vec3(0);
+	vec3 vel = vec3(0); // zeroed in case no keys are pressed
 
 	// Store previous position and velocity
 	static vec3 oldPosition = m_gameobject.networkData.GetElement<vec3>("Position");
@@ -118,8 +122,6 @@ void Client::update(float deltaTime) {
 		default:
 			Interpolation_None(otherClient.second);
 		}
-
-		//otherClient.second.Update(deltaTime);
 	}
 }
 
