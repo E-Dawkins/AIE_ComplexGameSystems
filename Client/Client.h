@@ -22,6 +22,8 @@ public:
 	void SetIP(const char* _ip)					{ IP = _ip; }
 	void SetPORT(unsigned short _port)			{ PORT = _port; }
 	void SetInterpolation(int _interpolation)	{ m_interpolationType = _interpolation % 3; };
+	void SetFPS(int _fps)						{ FPS = _fps; }
+	void SetNetworkFrameDelay(int _delay)		{ NETWORKFRAME = _delay; }
 
 	enum Interpolation
 	{

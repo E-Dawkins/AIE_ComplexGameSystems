@@ -11,6 +11,8 @@ int main() {
 	app->SetIP(ipInput.c_str());
 
 	app->SetInterpolation(Client::Interpolation::COSINE);
+	app->SetFPS(60);
+	app->SetNetworkFrameDelay(5);
 
 	app->run("AIE", 1280, 720, false);
 	delete app;
