@@ -98,11 +98,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="ClientApp.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
+    <ClInclude Include="ClientApp.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="NetworkData.h" />
   </ItemGroup>

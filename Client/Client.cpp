@@ -18,147 +18,48 @@ using aie::Gizmos;
 Client::Client()
 {
 	m_gameobject = GameObject();
-	InitialiseClientConnection();
+	std::thread clientUpdate(&Client::update, this);
 }
 
 Client::~Client()
 {
 	OnClientDisconnect();
+	delete m_pPeerInterface;
 }
 
-bool Client::startup() {
-	
-	setBackgroundColour(0.25f, 0.25f, 0.25f);
-
-	// initialise gizmo primitive counts
-	Gizmos::create(10000, 10000, 10000, 10000);
-
-	// create simple camera transforms
-	m_viewMatrix = glm::lookAt(vec3(10), vec3(0), vec3(0, 1, 0));
-	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
-										  getWindowWidth() / (float)getWindowHeight(),
-										  0.1f, 1000.f);
-
-	m_facing = vec3(1, 0, 0);
-	return true;
-}
-
-void Client::shutdown() {
-
-	Gizmos::destroy();
-}
-
-void Client::update(float deltaTime) {
+void Client::update() {
  
-	// Delay the update to fake ~60fps
-	int milliSleep = (int)std::ceilf(1000.f / (float)FPS);
-	std::this_thread::sleep_for(std::chrono::milliseconds(milliSleep));
-
-	FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
-
-	// wipe the gizmos clean for this frame
-	Gizmos::clear();
-
-	HandleNetworkMessages();
-	
-	// quit if we press escape
-	aie::Input* input = aie::Input::getInstance();
-
-	vec3 pos = m_gameobject.networkData.GetElement<vec3>("Position");
-	vec3 vel = vec3(0); // zeroed in case no keys are pressed
-
-	// Store previous position and velocity
-	static vec3 oldPosition = m_gameobject.networkData.GetElement<vec3>("Position");
-	static vec3 oldVelocity = m_gameobject.networkData.GetElement<vec3>("Velocity");
-
-	if (input->isKeyDown(aie::INPUT_KEY_LEFT))
+	while (true)
 	{
-		pos.x -= 10.f * deltaTime;
-		vel.x = -10;
-		m_facing = glm::vec3(-1, 0, 0);
-	}
-	if (input->isKeyDown(aie::INPUT_KEY_RIGHT))
-	{
-		pos.x += 10.f * deltaTime;
-		vel.x = 10;
-		m_facing = glm::vec3(1, 0, 0);
-	}
-	if (input->isKeyDown(aie::INPUT_KEY_UP))
-	{
-		pos.z -= 10.f * deltaTime;
-		vel.z = -10;
-		m_facing = glm::vec3(0, 0, -1);
-	}
-	if (input->isKeyDown(aie::INPUT_KEY_DOWN))
-	{
-		pos.z += 10.f * deltaTime;
-		vel.z = 10;
-		m_facing = glm::vec3(0, 0, 1);
+		std::cout << "test" << std::endl;
 	}
 
-	m_gameobject.networkData.SetElement("Position", pos);
-	m_gameobject.networkData.SetElement("Velocity", vel);
-
-	// Only send a network message when we change
-	// our movement state, and it is a network frame
-	if ((oldVelocity != vel || oldPosition != pos) && FRAMECOUNT == 0)
+	while(true)
 	{
-		SendClientGameObject();
-		oldPosition = pos;
-		oldVelocity = vel;
-	}
+		// Delay the update to fake ~60fps
+		float deltaTime = (int)std::ceilf(1000.f / (float)FPS);
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)deltaTime));
 
-	if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
-		SendSpawnBulletPacket();
+		FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
 
-	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
-		quit();
+		HandleNetworkMessages();
 
-	// Update all other GameObjects
-	for (auto& otherClient : m_otherClientGameObjects)
-	{
-		switch (m_interpolationType)
+		// Update all other GameObjects
+		for (auto& otherClient : m_otherClientGameObjects)
 		{
-		case Interpolation::LINEAR:
-			Interpolation_Linear(otherClient.second, deltaTime);
-			break;
-		case Interpolation::COSINE:
-			Interpolation_Cosine(otherClient.second, deltaTime);
-			break;
-		default:
-			Interpolation_None(otherClient.second);
+			switch (m_interpolationType)
+			{
+			case Interpolation::LINEAR:
+				Interpolation_Linear(otherClient.second, deltaTime);
+				break;
+			case Interpolation::COSINE:
+				Interpolation_Cosine(otherClient.second, deltaTime);
+				break;
+			default:
+				Interpolation_None(otherClient.second);
+			}
 		}
 	}
-}
-
-void Client::draw() {
-
-	// wipe the screen to the background colour
-	clearScreen();
-
-	// update perspective in case window resized
-	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
-										  getWindowWidth() / (float)getWindowHeight(),
-										  0.1f, 1000.f);
-
-	// Draw body
-	vec3 pos = m_gameobject.networkData.GetElement<vec3>("Position");
-	vec4 color = m_gameobject.networkData.GetElement<vec4>("Color");
-	float radius = m_gameobject.networkData.GetElement<float>("Radius");
-
-	Gizmos::addSphere(pos, radius, 8, 8, color);
-
-	// Draw other clients bodies
-	for (auto& otherClient : m_otherClientGameObjects)
-	{
-		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
-		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
-		float radius = otherClient.second.networkData.GetElement<float>("Radius");
-
-		Gizmos::addSphere(localPos, radius, 8, 8, color);
-	}
-
-	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
 
 #pragma region Network Methods
@@ -189,6 +90,9 @@ void Client::InitialiseClientConnection()
 
 void Client::HandleNetworkMessages()
 {
+	if (m_pPeerInterface == nullptr)
+		return;
+
 	RakNet::Packet* packet;
 
 	// Check the packet and run appropriate code path
@@ -262,7 +166,7 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;
 }
 
-void Client::SendClientGameObject()
+void Client::SendClientObject()
 {
 	m_gameobject.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
@@ -324,17 +228,13 @@ void Client::OnReceivedClientDisconnect(RakNet::Packet* _packet)
 	m_otherClientGameObjects.erase(clientID);
 }
 
-void Client::SendSpawnBulletPacket()
+void Client::SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity)
 {
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_GAMEOBJECT);
-
-	glm::vec3 spawnPos = m_gameobject.networkData.GetElement<vec3>("Position") + m_facing;
-	float velocity = 3;
-
-	bs.Write((char*)&spawnPos, sizeof(glm::vec3));
-	bs.Write((char*)&m_facing, sizeof(glm::vec3));
-	bs.Write((char*)&velocity, sizeof(float));
+	bs.Write((char*)&_spawnPos, sizeof(vec3));
+	bs.Write((char*)&_direction, sizeof(vec3));
+	bs.Write((char*)&_velocity, sizeof(float));
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE, 0,
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);

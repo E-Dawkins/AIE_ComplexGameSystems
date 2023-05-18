@@ -1,18 +1,18 @@
-#include "Client.h"
+#include "ClientApp.h"
 
 int main() {
 	
-	auto app = new Client();
+	auto app = new ClientApp();
 
 	// This is here as an example of how to setup client defaults
 	std::cout << "IP to connect to: ";
 	std::string ipInput;
 	std::cin >> ipInput;
-	app->SetIP(ipInput.c_str());
+	app->client->SetIP(ipInput.c_str());
 
-	app->SetInterpolation(Client::Interpolation::NONE);
-	app->SetFPS(60);
-	app->SetNetworkFrameDelay(3);
+	app->client->SetInterpolation(Client::Interpolation::COSINE);
+	app->client->SetFPS(60);
+	app->client->SetNetworkFrameDelay(3);
 
 	app->run("AIE", 1280, 720, false);
 	delete app;

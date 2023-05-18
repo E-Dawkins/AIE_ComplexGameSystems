@@ -7,23 +7,24 @@
 #include "GameObject.h"
 #include <unordered_map>
 
-class Client : public aie::Application {
+class Client {
 public:
 
 	Client();
 	~Client();
 
-	virtual bool startup();
-	virtual void shutdown();
-
-	virtual void update(float deltaTime);
-	virtual void draw();
+	void update();
 
 	void SetIP(const char* _ip)					{ IP = _ip; }
 	void SetPORT(unsigned short _port)			{ PORT = _port; }
 	void SetInterpolation(int _interpolation)	{ m_interpolationType = _interpolation % 3; };
 	void SetFPS(int _fps)						{ FPS = _fps; }
 	void SetNetworkFrameDelay(int _delay)		{ NETWORKFRAME = _delay; }
+
+	NetworkData& Data() { return m_gameobject.networkData; }
+	bool NetworkFrame() { return FRAMECOUNT == 0; }
+
+	std::unordered_map<int, GameObject>& OtherObjects() { return m_otherClientGameObjects; }
 
 	enum Interpolation
 	{
@@ -32,15 +33,16 @@ public:
 		COSINE
 	};
 
-protected:
+	void SendClientObject();
+	void SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity);
 	void InitialiseClientConnection();
+
+protected:
 	void HandleNetworkMessages();
 	void OnSetClientIDPacket(RakNet::Packet* _packet);
-	void SendClientGameObject();
 	void OnReceivedClientDataPacket(RakNet::Packet* _packet);
 	void OnClientDisconnect();
 	void OnReceivedClientDisconnect(RakNet::Packet* _packet);
-	void SendSpawnBulletPacket();
 	void OnDespawn(RakNet::Packet* _packet);
 
 	// Interpolation methods
@@ -58,8 +60,8 @@ protected:
 
 	std::unordered_map<int, GameObject> m_otherClientGameObjects;
 
-	glm::mat4	m_viewMatrix;
-	glm::mat4	m_projectionMatrix;
+	glm::mat4 m_viewMatrix;
+	glm::mat4 m_projectionMatrix;
 
 	int FRAMECOUNT = -1; // -1 so first frame is 0
 	int NETWORKFRAME = 3; // frame gap between sending network data
