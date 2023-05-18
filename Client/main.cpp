@@ -10,7 +10,7 @@ int main() {
 	std::cin >> ipInput;
 	app->SetIP(ipInput.c_str());
 
-	app->SetInterpolation(Client::Interpolation::COSINE);
+	app->SetInterpolation(Client::Interpolation::NONE);
 	app->SetFPS(60);
 	app->SetNetworkFrameDelay(3);
 

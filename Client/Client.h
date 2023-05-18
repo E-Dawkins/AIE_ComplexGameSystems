@@ -10,8 +10,8 @@
 class Client : public aie::Application {
 public:
 
-	Client() = default;
-	virtual ~Client() = default;
+	Client();
+	~Client();
 
 	virtual bool startup();
 	virtual void shutdown();
@@ -45,12 +45,11 @@ protected:
 
 	// Interpolation methods
 	int m_interpolationType = Interpolation::LINEAR;
-
 	void Interpolation_None(GameObject& _gameObject);
 	void Interpolation_Linear(GameObject& _gameObject, float _dt);
 	void Interpolation_Cosine(GameObject& _gameObject, float _dt);
 
-	RakNet::RakPeerInterface* m_pPeerInterface;
+	RakNet::RakPeerInterface* m_pPeerInterface = nullptr;
 	const char* IP = "127.0.0.1";
 	unsigned short PORT = 5456;
 

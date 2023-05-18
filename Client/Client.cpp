@@ -15,6 +15,17 @@ using glm::vec4;
 using glm::mat4;
 using aie::Gizmos;
 
+Client::Client()
+{
+	m_gameobject = GameObject();
+	InitialiseClientConnection();
+}
+
+Client::~Client()
+{
+	OnClientDisconnect();
+}
+
 bool Client::startup() {
 	
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
@@ -28,17 +39,12 @@ bool Client::startup() {
 										  getWindowWidth() / (float)getWindowHeight(),
 										  0.1f, 1000.f);
 
-	m_gameobject = GameObject();
 	m_facing = vec3(1, 0, 0);
-
-	InitialiseClientConnection();
-
 	return true;
 }
 
 void Client::shutdown() {
 
-	OnClientDisconnect();
 	Gizmos::destroy();
 }
 
