@@ -7,6 +7,9 @@
 #include "GameObject.h"
 #include <unordered_map>
 
+#include <thread>
+#include <functional>
+
 class Client {
 public:
 
@@ -66,4 +69,7 @@ protected:
 	int FRAMECOUNT = -1; // -1 so first frame is 0
 	int NETWORKFRAME = 3; // frame gap between sending network data
 	int FPS = 60;
+
+	bool m_shouldUpdate = true;
+	std::thread m_updateThread;
 };

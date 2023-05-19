@@ -7,8 +7,6 @@
 
 #include <MessageIdentifiers.h>
 #include <BitStream.h>
-#include <thread>
-#include <chrono>
 
 using glm::vec3;
 using glm::vec4;
@@ -18,27 +16,26 @@ using aie::Gizmos;
 Client::Client()
 {
 	m_gameobject = GameObject();
-	std::thread clientUpdate(&Client::update, this);
+	m_updateThread = std::thread(std::bind(&Client::update, this));
 }
 
 Client::~Client()
 {
 	OnClientDisconnect();
+	
+	// Set thread to stop updating, and join it to the main thread
+	m_shouldUpdate = false;
+	m_updateThread.join();
+
 	delete m_pPeerInterface;
 }
 
 void Client::update() {
  
-	while (true)
-	{
-		std::cout << "test" << std::endl;
-	}
-
-	while(true)
+	while(m_shouldUpdate)
 	{
 		// Delay the update to fake ~60fps
-		float deltaTime = (int)std::ceilf(1000.f / (float)FPS);
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)deltaTime));
+		float deltaTime = std::ceilf(1000.f / (float)FPS);
 
 		FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
 
@@ -59,6 +56,8 @@ void Client::update() {
 				Interpolation_None(otherClient.second);
 			}
 		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)deltaTime));
 	}
 }
 
