@@ -22,7 +22,7 @@ public:
 	virtual void update(float deltaTime);
 	virtual void draw();
 
-	Client* client = nullptr;
+	Client* client = new Client();
 
 protected:
 	vec3 m_facing = vec3(1, 0, 0);

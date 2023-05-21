@@ -32,10 +32,12 @@ Client::~Client()
 
 void Client::update() {
  
-	while(m_shouldUpdate)
+	while (m_shouldUpdate)
 	{
 		// Delay the update to fake ~60fps
-		float deltaTime = std::ceilf(1000.f / (float)FPS);
+		float dtMs = 1000.f / (float)FPS;
+		float dtS = dtMs * 0.001;
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)std::ceil(dtMs)));
 
 		FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
 
@@ -47,17 +49,15 @@ void Client::update() {
 			switch (m_interpolationType)
 			{
 			case Interpolation::LINEAR:
-				Interpolation_Linear(otherClient.second, deltaTime);
+				Interpolation_Linear(otherClient.second, dtS);
 				break;
 			case Interpolation::COSINE:
-				Interpolation_Cosine(otherClient.second, deltaTime);
+				Interpolation_Cosine(otherClient.second, dtS);
 				break;
 			default:
 				Interpolation_None(otherClient.second);
 			}
 		}
-
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)deltaTime));
 	}
 }
 
@@ -159,7 +159,6 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(m_gameobject.id);
 	m_gameobject.networkData.SetElement("Color", GameObject::GetColor(m_gameobject.id));
-	vec4 col = m_gameobject.networkData.GetElement<vec4>("Color");
 	m_gameobject.networkData.SetElement("Radius", 1.f);
 
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;

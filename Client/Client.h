@@ -24,10 +24,10 @@ public:
 	void SetFPS(int _fps)						{ FPS = _fps; }
 	void SetNetworkFrameDelay(int _delay)		{ NETWORKFRAME = _delay; }
 
-	NetworkData& Data() { return m_gameobject.networkData; }
+	NetworkData* Data() { return &m_gameobject.networkData; }
 	bool NetworkFrame() { return FRAMECOUNT == 0; }
 
-	std::unordered_map<int, GameObject>& OtherObjects() { return m_otherClientGameObjects; }
+	std::unordered_map<int, GameObject> OtherObjects() { return m_otherClientGameObjects; }
 
 	enum Interpolation
 	{

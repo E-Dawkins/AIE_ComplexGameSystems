@@ -1,16 +1,19 @@
 #include "GameObject.h"
 #include <BitStream.h>
 #include "../Server/GameMessages.h"
+#include <string>
 
 // Store default data into gameobject network data
 GameObject::GameObject()
 {
-	networkData.Insert("Color", vec3());
+	networkData.Insert("Color", vec4());
 	networkData.Insert("Position", vec3());
 	networkData.Insert("LocalPosition", vec3());
 	networkData.Insert("Velocity", vec3());
 	networkData.Insert("Radius", 0.f);
 }
+
+GameObject::~GameObject() = default;
 
 void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::SystemAddress& _address, bool _broadcast)
 {
@@ -71,7 +74,7 @@ void GameObject::Read(RakNet::Packet* _packet)
 		}
 		
 		// ...then overwrite stored elements
-		networkData.SetElementBytes(key, bytes);
+		networkData.SetElementBytes(key.C_String(), bytes);
 	}
 }
 

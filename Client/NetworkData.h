@@ -1,8 +1,6 @@
 #pragma once
 #include <unordered_map>
 #include <iostream>
-#include <iomanip>
-#include <glm/ext.hpp>
 
 class NetworkData
 {
@@ -11,7 +9,7 @@ public:
 	template <typename T> void Insert(const char* _Key, T _Val)
 	{
 		// Already contains key, exit
-		if (Contains(_Key))
+		if (Contains(_Key, m_out))
 			return;
 
 		// Doesn't contain key, add it
@@ -23,7 +21,7 @@ public:
 	void InsertBytes(const char* _Key, std::vector<unsigned char> _Val)
 	{
 		// Already contains key, exit
-		if (Contains(_Key))
+		if (Contains(_Key, m_out))
 			return;
 
 		// Doesn't contain key, add it
@@ -62,7 +60,7 @@ public:
 	void Erase(const char* _Key)
 	{
 		// Doesn't contain key, can't erase it, throw exception
-		if (!Contains(_Key))
+		if (!Contains(_Key, m_out))
 		{
 			std::cout << "Key not defined!\n";
 			throw;
@@ -89,37 +87,48 @@ public:
 		}
 		
 		// Does contain key, return bytes -> T
-		return FromBytes<T>(m_out->second);
+		return FromBytes<T>(m_data[_Key]);
 	}
 
 	// Checks if unordered_map 'm_data' contains _Key
-	bool Contains(const char* _Key)
+	bool Contains(const char* _Key, std::pair<const char* const, std::vector<unsigned char>>*& _Out)
 	{
-		for (auto& member : m_data)
-		{
-			if (*member.first == *_Key)
-				return true;
-		}
+		bool allCharsSame = false;
 
-		return false;
-	}
-	
-	// Checks if unordered_map 'm_data' contains _Key,
-	// additionally sets _Out to contained key-value pair
-	bool Contains(const char* _Key, 
-		std::pair<const char* const, std::vector<unsigned char>>*& _Out)
-	{
 		for (auto& member : m_data)
 		{
-			if (*member.first == *_Key)
+			size_t size = strlen(member.first);
+
+			// Strings not same length, skip to next one
+			if (size != strlen(_Key))
+				continue;
+
+			// Count the number of same chars, if this count
+			// is same as the length of the string they are equal
+			int sameChars = 0;
+
+			for (int i = 0; i < (int)size; i++)
 			{
+				if (member.first[i] == _Key[i]) // char is same, update count
+					sameChars++;
+
+				else break; // not same, break immediately
+			}
+
+			// Char count same, so they are the same string
+			if (sameChars == (int)size)
+			{
+				allCharsSame = true;
 				_Out = &member;
-				return true;
+				break;
 			}
 		}
 
-		_Out = nullptr;
-		return false;
+		// If returning false, set _Out to nullptr
+		if (!allCharsSame)
+			_Out = nullptr;
+
+		return allCharsSame;
 	}
 
 	// Returns amount of elements in unordered_map 'm_data'
@@ -155,11 +164,21 @@ public:
 	// Converts vector of bytes (unsigned char) to T object
 	template<typename T> T FromBytes(std::vector<unsigned char>& bytes)
 	{
+		// Initialise object of type T
 		T out = T();
 		
-		// Copy byte vector to T out's memory address
-		auto begin = reinterpret_cast<unsigned char*>(std::addressof(out));
-		std::copy_n(bytes.begin(), bytes.size(), begin);
+		// The address to copy the individual bytes to
+		auto copyAddr = reinterpret_cast<unsigned char*>(std::addressof(out));
+
+		// Loop through and copy each byte to T object
+		for (auto b : bytes)
+		{
+			auto begin = std::addressof(b);
+			auto end = begin + sizeof(unsigned char);
+
+			std::copy(begin, end, copyAddr);
+			copyAddr += sizeof(unsigned char);
+		}
 
 		return out;
 	}

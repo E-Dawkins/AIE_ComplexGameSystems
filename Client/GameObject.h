@@ -11,7 +11,7 @@ class GameObject
 {
 public:
 	GameObject();
-	~GameObject() = default;
+	~GameObject();
 
 	NetworkData networkData;
 
