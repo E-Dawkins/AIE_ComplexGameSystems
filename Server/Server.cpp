@@ -211,7 +211,7 @@ float Server::GetElapsedTime()
 
 void Server::UpdateObjects()
 {
-	const int deltaTime = (int)std::ceil(1000.f / 300.f); // milliseconds per broadcast : ~60 tps
+	const int deltaTime = (int)std::ceil(1000.f / 60.f); // milliseconds per broadcast : ~60 tps
 	float timeToNextUpdate = 0; // countdown until we broadcast to all game objects
 	float updateFrequency = 1.f; // seconds between sending network data to clients
 
