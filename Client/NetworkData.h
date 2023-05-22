@@ -1,6 +1,5 @@
 #pragma once
 #include <unordered_map>
-#include <iostream>
 
 class NetworkData
 {
@@ -59,15 +58,11 @@ public:
 	// Erases element with _Key
 	void Erase(const char* _Key)
 	{
-		// Doesn't contain key, can't erase it, throw exception
-		if (!Contains(_Key, m_out))
+		// Only erase _Key if it exists in the network data
+		if (Contains(_Key, m_out))
 		{
-			std::cout << "Key not defined!\n";
-			throw;
+			m_data.erase(_Key);
 		}
-
-		// Does contain key, erase the key-value pair
-		m_data.erase(_Key);
 	}
 
 	// Clears unordered_map 'm_data'
@@ -79,10 +74,10 @@ public:
 	// Gets element with _Key, throws if none exists
 	template <typename T> T GetElement(const char* _Key)
 	{
-		// Doesn't contain key, throw exception
+		// Doesn't contain key, return new object of type T
 		if (!Contains(_Key, m_out))
 		{
-			std::cout << "Key not defined!\n";
+			return T();
 			throw;
 		}
 		
@@ -95,7 +90,7 @@ public:
 	{
 		bool allCharsSame = false;
 
-		for (auto& member : m_data)
+		for (auto& member : m_data) // loop through each data member in m_data
 		{
 			size_t size = strlen(member.first);
 
@@ -107,7 +102,7 @@ public:
 			// is same as the length of the string they are equal
 			int sameChars = 0;
 
-			for (int i = 0; i < (int)size; i++)
+			for (int i = 0; i < (int)size; i++) // loop through chars of each member name
 			{
 				if (member.first[i] == _Key[i]) // char is same, update count
 					sameChars++;
@@ -173,10 +168,14 @@ public:
 		// Loop through and copy each byte to T object
 		for (auto b : bytes)
 		{
+			// Get begin / end of this byte
 			auto begin = std::addressof(b);
 			auto end = begin + sizeof(unsigned char);
 
+			// Copy it to the copy address of T object
 			std::copy(begin, end, copyAddr);
+
+			// Move copy address forward by 1 byte
 			copyAddr += sizeof(unsigned char);
 		}
 

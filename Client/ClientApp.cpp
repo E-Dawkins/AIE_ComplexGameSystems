@@ -35,12 +35,12 @@ void ClientApp::update(float deltaTime)
 	// quit if we press escape
 	aie::Input* input = aie::Input::getInstance();
 
-	vec3 pos = client->Data()->GetElement<vec3>("Position");
+	vec3 pos = client->Data().GetElement<vec3>("Position");
 	vec3 vel = vec3(0); // zeroed in case no keys are pressed
 
 	// Store previous position and velocity
-	static vec3 oldPosition = client->Data()->GetElement<vec3>("Position");
-	static vec3 oldVelocity = client->Data()->GetElement<vec3>("Velocity");
+	static vec3 oldPosition = client->Data().GetElement<vec3>("Position");
+	static vec3 oldVelocity = client->Data().GetElement<vec3>("Velocity");
 
 	if (input->isKeyDown(aie::INPUT_KEY_LEFT))
 	{
@@ -67,8 +67,8 @@ void ClientApp::update(float deltaTime)
 		m_facing = glm::vec3(0, 0, 1);
 	}
 
-	client->Data()->SetElement("Position", pos);
-	client->Data()->SetElement("Velocity", vel);
+	client->Data().SetElement("Position", pos);
+	client->Data().SetElement("Velocity", vel);
 
 	// Only send a network message when we change
 	// our movement state, and it is a network frame
@@ -80,7 +80,7 @@ void ClientApp::update(float deltaTime)
 	}
 
 	if (input->wasKeyPressed(aie::INPUT_KEY_SPACE))
-		client->SendSpawnedObject(pos, vel, 3);
+		client->SendSpawnedObject(pos, m_facing, 3, 5);
 
 	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE))
 		quit();
@@ -97,9 +97,9 @@ void ClientApp::draw()
 		0.1f, 1000.f);
 
 	// Draw body
-	vec3 pos = client->Data()->GetElement<vec3>("Position");
-	vec4 color = client->Data()->GetElement<vec4>("Color");
-	float radius = client->Data()->GetElement<float>("Radius");
+	vec3 pos = client->Data().GetElement<vec3>("Position");
+	vec4 color = client->Data().GetElement<vec4>("Color");
+	float radius = client->Data().GetElement<float>("Radius");
 
 	Gizmos::addSphere(pos, radius, 8, 8, color);
 

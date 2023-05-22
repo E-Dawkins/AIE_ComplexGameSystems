@@ -36,10 +36,10 @@ void Client::update() {
 	{
 		// Delay the update to fake ~60fps
 		float dtMs = 1000.f / (float)FPS;
-		float dtS = dtMs * 0.001;
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)std::ceil(dtMs)));
+		float dtS = dtMs * 0.001f;
 
-		FRAMECOUNT = (FRAMECOUNT + 1) % NETWORKFRAME;
+		// Cap frame count to the FPS, wrap it back to 0
+		FRAMECOUNT = (FRAMECOUNT + 1) % FPS;
 
 		HandleNetworkMessages();
 
@@ -57,7 +57,11 @@ void Client::update() {
 			default:
 				Interpolation_None(otherClient.second);
 			}
+
+			otherClient.second.Update(dtS);
 		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds((int)std::ceil(dtMs)));
 	}
 }
 
@@ -101,15 +105,6 @@ void Client::HandleNetworkMessages()
 	{
 		switch (packet->data[0])
 		{
-		case ID_REMOTE_DISCONNECTION_NOTIFICATION:
-			std::cout << "Another client has disconnected." << std::endl;
-			break;
-		case ID_REMOTE_CONNECTION_LOST:
-			std::cout << "Another client has lost connection." << std::endl;
-			break;
-		case ID_REMOTE_NEW_INCOMING_CONNECTION:
-			std::cout << "Another client has connected." << std::endl;
-			break;
 		case ID_CONNECTION_REQUEST_ACCEPTED:
 			std::cout << "Our request has been accepted." << std::endl;
 			break;
@@ -196,7 +191,7 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 			// existing object - copy position, color, velocity but not localPosition
 			m_otherClientGameObjects[object.id].networkData.SetElement("Position", pos);
 			m_otherClientGameObjects[object.id].networkData.SetElement("Color", col);
-			m_otherClientGameObjects[object.id].networkData.SetElement("Velocity", vel);
+			m_otherClientGameObjects[object.id].networkData.SetElement("Velocity", vel);		
 		}
 	}
 }
@@ -226,13 +221,14 @@ void Client::OnReceivedClientDisconnect(RakNet::Packet* _packet)
 	m_otherClientGameObjects.erase(clientID);
 }
 
-void Client::SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity)
+void Client::SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity, float _lifetime)
 {
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_GAMEOBJECT);
 	bs.Write((char*)&_spawnPos, sizeof(vec3));
 	bs.Write((char*)&_direction, sizeof(vec3));
 	bs.Write((char*)&_velocity, sizeof(float));
+	bs.Write((char*)&_lifetime, sizeof(float));
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE, 0,
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
@@ -264,13 +260,12 @@ void Client::Interpolation_Linear(GameObject& _gameObject, float _dt)
 	vec3 localPos = _gameObject.networkData.GetElement<vec3>("LocalPosition");
 	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
 
-	vec3 velocity = _gameObject.networkData.GetElement<vec3>("Velocity");
-	vec3 targetPos = pos + (velocity * _dt);
+	vec3 vel = _gameObject.networkData.GetElement<vec3>("Velocity");
+	float frameMulti = 1.f / (float)(_gameObject.id >= 1000 ? FPS : NETWORKFRAME);
+	vec3 targetPos = pos + vel * frameMulti * _dt;
 
-	static float t = 0.f;
-	t = (float)FRAMECOUNT * (1.f / (float)NETWORKFRAME);
-
-	localPos = t * targetPos + (1.f - t) * localPos;
+	float t = (float)(FRAMECOUNT + 1) * frameMulti;
+	localPos = t * pos + (1.f - t) * targetPos;
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }
@@ -280,14 +275,14 @@ void Client::Interpolation_Cosine(GameObject& _gameObject, float _dt)
 	vec3 localPos = _gameObject.networkData.GetElement<vec3>("LocalPosition");
 	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
 
-	vec3 velocity = _gameObject.networkData.GetElement<vec3>("Velocity");
-	vec3 targetPos = pos + (velocity * _dt);
+	vec3 vel = _gameObject.networkData.GetElement<vec3>("Velocity");
+	float frameMulti = 1.f / (float)(_gameObject.id >= 1000 ? FPS : NETWORKFRAME);
+	
+	vec3 targetPos = pos + vel * frameMulti * _dt;
+	float t = (float)(FRAMECOUNT + 1) * frameMulti;
 
-	static float mu = 0.f;
-	mu = (float)FRAMECOUNT * (1.f / (float)NETWORKFRAME);
-
-	float mu2 = (1 - cosf(mu * glm::pi<float>())) * 0.5f;
-	localPos = (localPos * (1 - mu2) + targetPos * mu2);
+	float tCos = (1 - cosf(t * glm::pi<float>())) * 0.5f;
+	localPos = tCos * pos + (1.f - tCos) * targetPos;
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }

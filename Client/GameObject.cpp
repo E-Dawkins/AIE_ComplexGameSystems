@@ -1,7 +1,6 @@
 #include "GameObject.h"
 #include <BitStream.h>
 #include "../Server/GameMessages.h"
-#include <string>
 
 // Store default data into gameobject network data
 GameObject::GameObject()

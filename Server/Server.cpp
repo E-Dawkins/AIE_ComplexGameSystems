@@ -2,9 +2,7 @@
 #include <iostream>
 #include <MessageIdentifiers.h>
 #include <BitStream.h>
-#include <WinUser.h>
 #include "GameMessages.h"
-#include <string>
 #include <thread>
 #include <functional>
 
@@ -19,8 +17,9 @@ void Server::Run()
 	RakNet::SocketDescriptor sd(PORT, 0);
 
 	// Call startup - max 32 connections, on the assigned port
-	m_pPeerInterface->Startup(32, &sd, 1);
-	m_pPeerInterface->SetMaximumIncomingConnections(32);
+	unsigned int MAXCONNECTIONS = 32;
+	m_pPeerInterface->Startup(MAXCONNECTIONS, &sd, 1);
+	m_pPeerInterface->SetMaximumIncomingConnections(MAXCONNECTIONS);
 
 	// Bind update thread
 	std::thread updateThread(std::bind(&Server::UpdateObjects, this));
@@ -149,13 +148,14 @@ void Server::OnSpawnGameObject(RakNet::Packet* _packet)
 	glm::vec3 pos;
 	glm::vec3 dir;
 	float vel;
+	float lifetime;
 	bsIn.Read((char*)&pos, sizeof(glm::vec3));
 	bsIn.Read((char*)&dir, sizeof(glm::vec3));
 	bsIn.Read((char*)&vel, sizeof(float));
+	bsIn.Read((char*)&lifetime, sizeof(float));
 	SpawnObject(pos, dir * vel, 0.2f);
 
-	// Sets the spawned bullets lifetime to 5 seconds
-	m_gameObjects[m_nextServerID - 1].lifetime = 5.f;
+	m_gameObjects[m_nextServerID - 1].lifetime = lifetime;
 }
 
 void Server::SpawnObject(glm::vec3 _position, glm::vec3 _velocity, float _radius)
@@ -211,7 +211,7 @@ float Server::GetElapsedTime()
 
 void Server::UpdateObjects()
 {
-	const int deltaTime = (int)(1000.f/60.f); // milliseconds per broadcast : ~60 tps
+	const int deltaTime = (int)std::ceil(1000.f / 300.f); // milliseconds per broadcast : ~60 tps
 	float timeToNextUpdate = 0; // countdown until we broadcast to all game objects
 	float updateFrequency = 1.f; // seconds between sending network data to clients
 
@@ -237,7 +237,7 @@ void Server::UpdateObjects()
 					obj.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 
 				obj.lifetime -= deltaTime * 0.001f;
-				
+
 				// If expired, store in the vector rather than erasing while iterating
 				if (obj.lifetime <= 0)
 					deathRow.push_back(obj.id);

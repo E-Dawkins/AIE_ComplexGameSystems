@@ -24,8 +24,8 @@ public:
 	void SetFPS(int _fps)						{ FPS = _fps; }
 	void SetNetworkFrameDelay(int _delay)		{ NETWORKFRAME = _delay; }
 
-	NetworkData* Data() { return &m_gameobject.networkData; }
-	bool NetworkFrame() { return FRAMECOUNT == 0; }
+	NetworkData& Data() { return m_gameobject.networkData; }
+	bool NetworkFrame() { return FRAMECOUNT % NETWORKFRAME == 0; }
 
 	std::unordered_map<int, GameObject> OtherObjects() { return m_otherClientGameObjects; }
 
@@ -37,7 +37,7 @@ public:
 	};
 
 	void SendClientObject();
-	void SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity);
+	void SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity, float _lifetime);
 	void InitialiseClientConnection();
 
 protected:
