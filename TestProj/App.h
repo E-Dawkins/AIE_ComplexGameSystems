@@ -10,11 +10,11 @@ using glm::vec3;
 using glm::mat4;
 using aie::Gizmos;
 
-class ClientApp : public aie::Application
-{
+class App : public aie::Application {
 public:
-	ClientApp();
-	~ClientApp();
+
+	App() = default;
+	~App() = default;
 
 	virtual bool startup();
 	virtual void shutdown();

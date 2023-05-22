@@ -1,9 +1,6 @@
-#include "ClientApp.h"
+#include "App.h"
 
-ClientApp::ClientApp() = default;
-ClientApp::~ClientApp() = default;
-
-bool ClientApp::startup()
+bool App::startup()
 {
 	setBackgroundColour(0.25f, 0.25f, 0.25f);
 
@@ -21,13 +18,13 @@ bool ClientApp::startup()
 	return true;
 }
 
-void ClientApp::shutdown()
+void App::shutdown()
 {
 	Gizmos::destroy();
 	delete client;
 }
 
-void ClientApp::update(float deltaTime)
+void App::update(float deltaTime)
 {
 	// wipe the gizmos clean for this frame
 	Gizmos::clear();
@@ -86,7 +83,7 @@ void ClientApp::update(float deltaTime)
 		quit();
 }
 
-void ClientApp::draw()
+void App::draw()
 {
 	// wipe the screen to the background colour
 	clearScreen();
