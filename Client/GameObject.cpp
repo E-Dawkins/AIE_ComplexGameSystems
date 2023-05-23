@@ -9,7 +9,7 @@ GameObject::GameObject()
 	networkData.Insert("Position", vec3());
 	networkData.Insert("LocalPosition", vec3());
 	networkData.Insert("Velocity", vec3());
-	networkData.Insert("Radius", 0.f);
+	networkData.Insert("Size", vec3());
 }
 
 GameObject::~GameObject() = default;

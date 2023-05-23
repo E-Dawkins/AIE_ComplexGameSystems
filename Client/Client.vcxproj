@@ -44,17 +44,18 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Build\</OutDir>
-    <IntDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Intermediate\</IntDir>
-    <IncludePath>$(SolutionDir)bootstrap;$(SolutionDir)dependencies/imgui;$(SolutionDir)dependencies/glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)dependencies/raknet/include</IncludePath>
-    <LibraryPath>$(SolutionDir)temp\bootstrap\$(Configuration);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)dependencies/raknet/libs</LibraryPath>
+    <OutDir>$(SolutionDir)temp\$(ProjectName)\Build\</OutDir>
+    <IntDir>$(SolutionDir)temp\$(ProjectName)\Intermediate\</IntDir>
+    <IncludePath>$(SolutionDir)dependencies/glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)dependencies/raknet/include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)dependencies/raknet/libs</LibraryPath>
+    <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Build\</OutDir>
-    <IntDir>$(SolutionDir)temp\$(ProjectName)\$(Configuration)\Intermediate\</IntDir>
-    <IncludePath>$(SolutionDir)bootstrap;$(SolutionDir)dependencies/imgui;$(SolutionDir)dependencies/glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)dependencies/raknet/include</IncludePath>
-    <LibraryPath>$(SolutionDir)temp\bootstrap\$(Configuration);$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)dependencies/raknet/libs</LibraryPath>
+    <OutDir>$(SolutionDir)temp\$(ProjectName)\Build\</OutDir>
+    <IntDir>$(SolutionDir)temp\$(ProjectName)\Intermediate\</IntDir>
+    <IncludePath>$(SolutionDir)dependencies/glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)dependencies/raknet/include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;$(SolutionDir)dependencies/raknet/libs</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -71,6 +72,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ws2_32.lib;bootstrap.lib;raknet_d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CopyFileToFolders>
+      <DestinationFolders>$(OutDir)includes</DestinationFolders>
+    </CopyFileToFolders>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -95,15 +99,18 @@
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>
+    <CopyFileToFolders>
+      <DestinationFolders>$(OutDir)includes</DestinationFolders>
+    </CopyFileToFolders>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="GameObject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client.h" />
-    <ClInclude Include="GameObject.h" />
-    <ClInclude Include="NetworkData.h" />
+    <CopyFileToFolders Include="Client.h" />
+    <CopyFileToFolders Include="GameObject.h" />
+    <CopyFileToFolders Include="NetworkData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

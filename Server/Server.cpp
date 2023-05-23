@@ -16,8 +16,7 @@ void Server::Run()
 	// Setup socket descriptor to describe this connection
 	RakNet::SocketDescriptor sd(PORT, 0);
 
-	// Call startup - max 32 connections, on the assigned port
-	unsigned int MAXCONNECTIONS = 32;
+	// Call startup - max connections, on the assigned port
 	m_pPeerInterface->Startup(MAXCONNECTIONS, &sd, 1);
 	m_pPeerInterface->SetMaximumIncomingConnections(MAXCONNECTIONS);
 
@@ -42,9 +41,6 @@ void Server::HandleNetworkMessages()
 			{
 			case ID_NEW_INCOMING_CONNECTION:
 				SendNewClientID(packet->systemAddress);
-				break;
-			case ID_DISCONNECTION_NOTIFICATION:
-				std::cout << "A client has disconnected." << std::endl;
 				break;
 			case ID_CONNECTION_LOST:
 				std::cout << "A client has lost connection." << std::endl;
@@ -102,7 +98,7 @@ void Server::SendNewClientID(RakNet::SystemAddress& _address)
 	GameObject obj = GameObject();
 	obj.networkData.SetElement("Position", glm::vec3(0));
 	obj.networkData.SetElement("Color", GameObject::GetColor(id));
-	obj.networkData.SetElement("Radius", 1.f);
+	obj.networkData.SetElement("Size", glm::vec3(1));
 	obj.id = id;
 	obj.Write(m_pPeerInterface, _address, true);
 
@@ -116,6 +112,8 @@ void Server::ClientDisconnect(RakNet::Packet* _packet)
 
 	int id;
 	bsIn.Read(id);
+
+	std::cout << "Client " << id << " has disconnected." << std::endl;
 
 	RakNet::BitStream bs;
 	bs.Write((RakNet::MessageID)ID_CLIENT_DISCONNECT);
@@ -153,19 +151,19 @@ void Server::OnSpawnGameObject(RakNet::Packet* _packet)
 	bsIn.Read((char*)&dir, sizeof(glm::vec3));
 	bsIn.Read((char*)&vel, sizeof(float));
 	bsIn.Read((char*)&lifetime, sizeof(float));
-	SpawnObject(pos, dir * vel, 0.2f);
+	SpawnObject(pos, dir * vel, glm::vec3(0.2f));
 
 	m_gameObjects[m_nextServerID - 1].lifetime = lifetime;
 }
 
-void Server::SpawnObject(glm::vec3 _position, glm::vec3 _velocity, float _radius)
+void Server::SpawnObject(glm::vec3 _position, glm::vec3 _velocity, glm::vec3 _size)
 {
 	m_gameObjects[m_nextServerID] = GameObject();
 	m_gameObjects[m_nextServerID].id = m_nextServerID;
 	m_gameObjects[m_nextServerID].networkData.SetElement("Position", _position);
 	m_gameObjects[m_nextServerID].networkData.SetElement("LocalPosition", _position);
 	m_gameObjects[m_nextServerID].networkData.SetElement("Velocity", _velocity);
-	m_gameObjects[m_nextServerID].networkData.SetElement("Radius", _radius);
+	m_gameObjects[m_nextServerID].networkData.SetElement("Size", _size);
 
 	m_gameObjects[m_nextServerID].Write(m_pPeerInterface, 
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);

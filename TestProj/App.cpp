@@ -96,18 +96,18 @@ void App::draw()
 	// Draw body
 	vec3 pos = client->Data().GetElement<vec3>("Position");
 	vec4 color = client->Data().GetElement<vec4>("Color");
-	float radius = client->Data().GetElement<float>("Radius");
+	vec3 size = client->Data().GetElement<vec3>("Size");
 
-	Gizmos::addSphere(pos, radius, 8, 8, color);
+	Gizmos::addSphere(pos, glm::length(size), 8, 8, color);
 
 	// Draw other clients bodies
 	for (auto otherClient : client->OtherObjects())
 	{
 		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
 		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
-		float radius = otherClient.second.networkData.GetElement<float>("Radius");
+		vec3 size = otherClient.second.networkData.GetElement<vec3>("Size");
 
-		Gizmos::addSphere(localPos, radius, 8, 8, color);
+		Gizmos::addSphere(localPos, glm::length(size), 8, 8, color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);

@@ -1,17 +1,8 @@
 #include "Client.h"
-#include "Gizmos.h"
-#include "Input.h"
 
-#include <glm/ext.hpp>
 #include <iostream>
-
 #include <MessageIdentifiers.h>
 #include <BitStream.h>
-
-using glm::vec3;
-using glm::vec4;
-using glm::mat4;
-using aie::Gizmos;
 
 Client::Client()
 {
@@ -154,7 +145,7 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(m_gameobject.id);
 	m_gameobject.networkData.SetElement("Color", GameObject::GetColor(m_gameobject.id));
-	m_gameobject.networkData.SetElement("Radius", 1.f);
+	m_gameobject.networkData.SetElement("Size", vec3(1));
 
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;
 }

@@ -23,14 +23,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client.h">
+    <CopyFileToFolders Include="Client.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GameObject.h">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="GameObject.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="NetworkData.h">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="NetworkData.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
