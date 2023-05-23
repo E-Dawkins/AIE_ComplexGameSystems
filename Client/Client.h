@@ -26,6 +26,17 @@ public:
 	NetworkData& Data() { return m_gameobject.networkData; }
 	bool NetworkFrame() { return FRAMECOUNT % NETWORKFRAME == 0; }
 
+	int ID() { return m_gameobject.id; }
+	bool IsConnected() 
+	{ 
+		if (m_pPeerInterface == nullptr)
+			return false;
+
+		auto state = m_pPeerInterface->GetConnectionState(m_pPeerInterface->GetGUIDFromIndex(0));
+		return state == RakNet::IS_CONNECTED;
+	}
+	bool IsServerFull() { return m_serverFull; }
+
 	std::unordered_map<int, GameObject> OtherObjects() { return m_otherClientGameObjects; }
 
 	enum Interpolation
@@ -71,4 +82,6 @@ protected:
 
 	bool m_shouldUpdate = true;
 	std::thread m_updateThread;
+
+	bool m_serverFull = false;
 };

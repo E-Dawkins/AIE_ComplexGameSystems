@@ -2,11 +2,14 @@
 #include "Application.h"
 #include <glm/ext.hpp>
 #include <glm/mat4x4.hpp>
-#include "Client.h"
 #include "Gizmos.h"
 #include "Input.h"
+#include <iostream>
+
+#include "Client.h"
 
 using glm::vec3;
+using glm::vec4;
 using glm::mat4;
 using aie::Gizmos;
 
@@ -25,8 +28,6 @@ public:
 	Client* client = new Client();
 
 protected:
-	vec3 m_facing = vec3(1, 0, 0);
-
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
 };

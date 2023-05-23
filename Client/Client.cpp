@@ -69,13 +69,13 @@ void Client::InitialiseClientConnection()
 	// Call startup - max 1 connection (the server)
 	m_pPeerInterface->Startup(1, &sd, 1);
 
-	std::cout << "Connection to server at: " << IP << std::endl;
+	std::cout << "Connecting to server at {" << IP << "} ..." << std::endl;
 
 	// Attempt to connect to the given server
-	RakNet::ConnectionAttemptResult res = 
+	RakNet::ConnectionAttemptResult res =
 		m_pPeerInterface->Connect(IP, PORT, nullptr, 0);
 
-	// If we did not connect to the server, print the error
+	// Connection was not started
 	if (res != RakNet::CONNECTION_ATTEMPT_STARTED)
 	{
 		std::cout << "Unable to connect. Error: " << res << std::endl;
@@ -101,6 +101,7 @@ void Client::HandleNetworkMessages()
 			break;
 		case ID_NO_FREE_INCOMING_CONNECTIONS:
 			std::cout << "The server is full." << std::endl;
+			m_serverFull = true;
 			break;
 		case ID_DISCONNECTION_NOTIFICATION:
 			std::cout << "We have been disconnected." << std::endl;
@@ -144,9 +145,6 @@ void Client::OnSetClientIDPacket(RakNet::Packet* _packet)
 	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 	bsIn.Read(m_gameobject.id);
-	m_gameobject.networkData.SetElement("Color", GameObject::GetColor(m_gameobject.id));
-	m_gameobject.networkData.SetElement("Size", vec3(1));
-
 	std::cout << "Set client ID to: " << m_gameobject.id << std::endl;
 }
 
@@ -163,7 +161,7 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 	int clientID;
 	bsIn.Read(clientID);
 
-	if (clientID != m_gameobject.id)
+	if (clientID != m_gameobject.id && clientID != -1)
 	{
 		GameObject object = GameObject();
 		object.Read(_packet);
@@ -175,14 +173,7 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		}
 		else
 		{
-			vec3 pos = object.networkData.GetElement<vec3>("Position");
-			vec3 vel = object.networkData.GetElement<vec3>("Velocity");
-			vec4 col = object.networkData.GetElement<vec4>("Color");
-
-			// existing object - copy position, color, velocity but not localPosition
-			m_otherClientGameObjects[object.id].networkData.SetElement("Position", pos);
-			m_otherClientGameObjects[object.id].networkData.SetElement("Color", col);
-			m_otherClientGameObjects[object.id].networkData.SetElement("Velocity", vel);		
+			m_otherClientGameObjects[object.id].networkData = object.networkData;
 		}
 	}
 }

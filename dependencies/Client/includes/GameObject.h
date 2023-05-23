@@ -16,7 +16,7 @@ public:
 	NetworkData networkData;
 
 	// Any data that shouldn't be overridable
-	int id;
+	int id = -1;
 	float lifetime;
 
 	void Write(RakNet::RakPeerInterface* _pPeerInterface,
