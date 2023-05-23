@@ -104,7 +104,7 @@ void App::draw()
 		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
 		vec3 size = otherClient.second.networkData.GetElement<vec3>("Size");
 
-		Gizmos::addAABBFilled(localPos, size * 0.5f, color);
+		Gizmos::addCapsule(localPos, size.y, size.x, 10, 10, color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
