@@ -129,6 +129,10 @@ void Server::OnReceivedClientData(RakNet::Packet* _packet)
 	// Read the gameobject and store it in our list
 	GameObject object;
 	object.Read(_packet);
+
+	if (object.id == -1) // don't store a game object with id -1
+		return;
+
 	m_gameObjects[object.id] = object;
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
@@ -137,35 +141,17 @@ void Server::OnReceivedClientData(RakNet::Packet* _packet)
 
 void Server::OnSpawnGameObject(RakNet::Packet* _packet)
 {
-	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
-	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+	RakNet::BitStream bs(_packet->data, _packet->length, false);
 	
-	glm::vec3 pos;
-	glm::vec3 dir;
-	float vel;
-	float lifetime;
-	bsIn.Read((char*)&pos, sizeof(glm::vec3));
-	bsIn.Read((char*)&dir, sizeof(glm::vec3));
-	bsIn.Read((char*)&vel, sizeof(float));
-	bsIn.Read((char*)&lifetime, sizeof(float));
-	SpawnObject(pos, dir * vel, glm::vec3(0.2f));
+	GameObject receivedObj;
+	receivedObj.Read(_packet);
+	receivedObj.id = m_nextServerID;
 
-	m_gameObjects[m_nextServerID - 1].lifetime = lifetime;
-}
-
-void Server::SpawnObject(glm::vec3 _position, glm::vec3 _velocity, glm::vec3 _size)
-{
-	m_gameObjects[m_nextServerID] = GameObject();
-	m_gameObjects[m_nextServerID].id = m_nextServerID;
-	m_gameObjects[m_nextServerID].networkData.SetElement("Position", _position);
-	m_gameObjects[m_nextServerID].networkData.SetElement("LocalPosition", _position);
-	m_gameObjects[m_nextServerID].networkData.SetElement("Velocity", _velocity);
-	m_gameObjects[m_nextServerID].networkData.SetElement("Size", _size);
-
-	m_gameObjects[m_nextServerID].Write(m_pPeerInterface, 
-		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
-
+	m_gameObjects[receivedObj.id] = receivedObj;
 	m_nextServerID++;
+
+	m_gameObjects[receivedObj.id].Write(m_pPeerInterface,
+		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 }
 
 void Server::Despawn(int _id)
@@ -231,11 +217,15 @@ void Server::UpdateObjects()
 				if (timeToNextUpdate < 0)
 					obj.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 
-				obj.lifetime -= deltaTime * 0.001f;
+				// Object does not decay life, they can't possibly die over time
+				if (obj.lifeDecays)
+				{
+					obj.lifetime -= deltaTime * 0.001f;
 
-				// If expired, store in the vector rather than erasing while iterating
-				if (obj.lifetime <= 0)
-					deathRow.push_back(obj.id);
+					// If expired, store in the vector rather than erasing while iterating
+					if (obj.lifetime <= 0)
+						deathRow.push_back(obj.id);
+				}
 			}
 		}
 

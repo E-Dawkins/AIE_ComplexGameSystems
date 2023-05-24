@@ -27,7 +27,11 @@ public:
 
 	Client* client = new Client();
 
+	void OnFirstSend();
+
 protected:
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
+
+	bool m_firstSend = true;
 };

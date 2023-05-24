@@ -12,13 +12,21 @@ GameObject::GameObject()
 	networkData.Insert("Size", vec3());
 }
 
-GameObject::~GameObject() = default;
+GameObject::~GameObject()
+{
+	networkData.Clear();
+}
 
-void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, const RakNet::SystemAddress& _address, bool _broadcast)
+void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface, 
+	const RakNet::SystemAddress& _address, bool _broadcast, RakNet::MessageID _messageID)
 {
 	RakNet::BitStream bs;
-	bs.Write((RakNet::MessageID)ID_CLIENT_CLIENT_DATA);
+	bs.Write(_messageID);
+	
+	// Write other gameobject data
 	bs.Write(id);
+	bs.Write(lifetime);
+	bs.Write(lifeDecays);
 	
 	// Write out amount of data elements
 	bs.Write(networkData.Size());
@@ -47,7 +55,11 @@ void GameObject::Read(RakNet::Packet* _packet)
 {
 	RakNet::BitStream bsIn(_packet->data, _packet->length, false);
 	bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+	
+	// Read in other game object data
 	bsIn.Read(id);
+	bsIn.Read(lifetime);
+	bsIn.Read(lifeDecays);
 
 	// Read in amount of data elements
 	int dataAmount = 0;

@@ -17,7 +17,6 @@ protected:
 	void OnReceivedClientData(RakNet::Packet* _packet);
 
 	void OnSpawnGameObject(RakNet::Packet* _packet);
-	void SpawnObject(glm::vec3 _position, glm::vec3 _velocity, glm::vec3 _size);
 	void Despawn(int _id);
 
 	float GetElapsedTime();

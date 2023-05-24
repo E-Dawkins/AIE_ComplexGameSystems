@@ -17,8 +17,8 @@ bool App::startup()
 	client->InitialiseClientConnection();
 
 	// Set client defaults
-	client->Data().SetElement("Size", vec3(.2, 1.5, 1.5));
-	client->Data().SetElement("Color", vec4(0.45, 0.04, 0.51, 1));
+	client->Data().SetElement("Size", vec3(.2f, 1.5f, 1.5f));
+	client->Data().SetElement("Color", vec4(0.45f, 0.04f, 0.51f, 1.f));
 
 	return true;
 }
@@ -31,12 +31,9 @@ void App::shutdown()
 
 void App::update(float deltaTime)
 {
-	static bool firstSend = true;
-
-	if (client->ID() != -1 && firstSend)
+	if (client->ID() != -1 && m_firstSend)
 	{
-		client->SendClientObject();
-		firstSend = false;
+		OnFirstSend();
 	}
 
 	// wipe the gizmos clean for this frame
@@ -59,7 +56,7 @@ void App::update(float deltaTime)
 	pos.y += 10.f * deltaTime * verticalInput;
 	vel.y += 10.f * verticalInput;
 
-	pos.x = (client->ID() % 2 == 0) ? 5.f : -5.f;
+	pos.x = (client->ID() == 1) ? -5.f : 5.f;
 
 	client->Data().SetElement("Position", pos);
 	client->Data().SetElement("Velocity", vel);
@@ -108,4 +105,21 @@ void App::draw()
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
+}
+
+// This runs on the first frame that client has been set an id
+void App::OnFirstSend()
+{
+	client->SendClientObject();
+	m_firstSend = false;
+
+	// If player 2, then spawn the ball
+	if (client->ID() == 2)
+	{
+		GameObject ball = GameObject();
+		ball.networkData.SetElement("Size", vec3(0.25f));
+		ball.networkData.SetElement("Color", vec4(1.f));
+		ball.lifeDecays = false;
+		client->SendSpawnedObject(ball);
+	}
 }

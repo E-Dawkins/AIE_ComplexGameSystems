@@ -47,7 +47,7 @@ public:
 	};
 
 	void SendClientObject();
-	void SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity, float _lifetime);
+	void SendSpawnedObject(GameObject _gameObject);
 	void InitialiseClientConnection();
 
 protected:

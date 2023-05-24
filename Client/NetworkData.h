@@ -78,7 +78,6 @@ public:
 		if (!Contains(_Key, m_out))
 		{
 			return T();
-			throw;
 		}
 		
 		// Does contain key, return bytes -> T
@@ -161,6 +160,9 @@ public:
 	{
 		// Initialise object of type T
 		T out = T();
+
+		// Guarantee that this vector is the same size as the object
+		bytes.resize(sizeof(out));
 		
 		// The address to copy the individual bytes to
 		auto copyAddr = reinterpret_cast<unsigned char*>(std::addressof(out));

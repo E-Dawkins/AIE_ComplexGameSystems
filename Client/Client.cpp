@@ -37,6 +37,8 @@ void Client::update() {
 		// Update all other GameObjects
 		for (auto& otherClient : m_otherClientGameObjects)
 		{
+			otherClient.second.Update(dtS);
+
 			switch (m_interpolationType)
 			{
 			case Interpolation::LINEAR:
@@ -48,8 +50,6 @@ void Client::update() {
 			default:
 				Interpolation_None(otherClient.second);
 			}
-
-			otherClient.second.Update(dtS);
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds((int)std::ceil(dtMs)));
@@ -173,7 +173,10 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		}
 		else
 		{
+			// overwrite everything but local position - for interpolation
+			auto localPos = m_otherClientGameObjects[object.id].networkData.GetElement<vec3>("LocalPosition");
 			m_otherClientGameObjects[object.id].networkData = object.networkData;
+			m_otherClientGameObjects[object.id].networkData.SetElement("LocalPosition", localPos);
 		}
 	}
 }
@@ -203,17 +206,10 @@ void Client::OnReceivedClientDisconnect(RakNet::Packet* _packet)
 	m_otherClientGameObjects.erase(clientID);
 }
 
-void Client::SendSpawnedObject(vec3 _spawnPos, vec3 _direction, float _velocity, float _lifetime)
+void Client::SendSpawnedObject(GameObject _gameObject)
 {
-	RakNet::BitStream bs;
-	bs.Write((RakNet::MessageID)ID_CLIENT_SPAWN_GAMEOBJECT);
-	bs.Write((char*)&_spawnPos, sizeof(vec3));
-	bs.Write((char*)&_direction, sizeof(vec3));
-	bs.Write((char*)&_velocity, sizeof(float));
-	bs.Write((char*)&_lifetime, sizeof(float));
-
-	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE, 0,
-		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+	_gameObject.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, 
+		true, (RakNet::MessageID)ID_CLIENT_SPAWN_GAMEOBJECT);
 }
 
 void Client::OnDespawn(RakNet::Packet* _packet)
