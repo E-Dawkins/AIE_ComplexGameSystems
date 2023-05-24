@@ -161,6 +161,7 @@ public:
 		// Initialise object of type T
 		T out = T();
 
+		// Guarantee that this vector is the same size as the object
 		bytes.resize(sizeof(out));
 		
 		// The address to copy the individual bytes to
