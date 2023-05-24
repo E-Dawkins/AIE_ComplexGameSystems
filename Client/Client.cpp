@@ -206,7 +206,7 @@ void Client::OnReceivedClientDisconnect(RakNet::Packet* _packet)
 	m_otherClientGameObjects.erase(clientID);
 }
 
-void Client::SendSpawnedObject(GameObject _gameObject)
+void Client::SendGameObject(GameObject _gameObject)
 {
 	_gameObject.Write(m_pPeerInterface, RakNet::UNASSIGNED_SYSTEM_ADDRESS, 
 		true, (RakNet::MessageID)ID_CLIENT_SPAWN_GAMEOBJECT);

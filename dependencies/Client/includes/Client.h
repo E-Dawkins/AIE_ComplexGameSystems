@@ -47,7 +47,7 @@ public:
 	};
 
 	void SendClientObject();
-	void SendSpawnedObject(GameObject _gameObject);
+	void SendGameObject(GameObject _gameObject);
 	void InitialiseClientConnection();
 
 protected:

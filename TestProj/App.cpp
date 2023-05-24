@@ -7,6 +7,8 @@ bool App::startup()
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
 
+	m_windowSize = vec2(getWindowWidth(), getWindowHeight());
+
 	// create simple camera transforms
 	// glm::lookAt(camera position, camera target, camera up)
 	m_viewMatrix = glm::lookAt(vec3(0,0,10), vec3(0), vec3(0, 1, 0));
@@ -70,6 +72,9 @@ void App::update(float deltaTime)
 		oldVelocity = vel;
 	}
 
+	CheckPaddleCollision();
+	CheckScreenCollision();
+
 	// Quit if the player presses 'esc' or server full
 	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE) || client->IsServerFull())
 	{
@@ -101,7 +106,10 @@ void App::draw()
 		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
 		vec3 size = otherClient.second.networkData.GetElement<vec3>("Size");
 
-		Gizmos::addCapsule(localPos, size.y, size.x, 10, 10, color);
+		if (otherClient.first == 1000) // the ball
+			Gizmos::addSphere(localPos, glm::length(size), 8, 8, color);
+		
+		else Gizmos::addCapsule(localPos, size.y, size.x, 8, 8, color);
 	}
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
@@ -117,9 +125,69 @@ void App::OnFirstSend()
 	if (client->ID() == 2)
 	{
 		GameObject ball = GameObject();
-		ball.networkData.SetElement("Size", vec3(0.25f));
-		ball.networkData.SetElement("Color", vec4(1.f));
+		ball.networkData.SetElement("Size", vec3(0.1));
+		ball.networkData.SetElement("Color", vec4(1));
+		ball.networkData.SetElement("Velocity", vec3(0.94f, 0.342f, 0) * 3.f);
 		ball.lifeDecays = false;
-		client->SendSpawnedObject(ball);
+		client->SendGameObject(ball);
+	}
+}
+
+void App::CheckPaddleCollision()
+{
+	GameObject ball = client->OtherObjects()[1000];
+	vec3 ballPos = ball.networkData.GetElement<vec3>("LocalPosition");
+
+	vec3 clientPos = client->Data().GetElement<vec3>("Position");
+	vec3 clientExtents = client->Data().GetElement<vec3>("Size") * 0.5f;
+
+	// Check if ball's position is within paddle x/y extents
+	if (ballPos.x >= clientPos.x - clientExtents.x && ballPos.x <= clientPos.x + clientExtents.x &&
+		ballPos.y >= clientPos.y - clientExtents.y && ballPos.y <= clientPos.y + clientExtents.y)
+	{
+		vec3 vel = ball.networkData.GetElement<vec3>("Velocity");
+
+		vec3 signBall = glm::sign(vel);
+		vec3 signPos = glm::sign(clientPos - ballPos);
+
+		// If ball going towards paddle, flip velocity-x
+		if (signBall.x == signPos.x)
+		{
+			vel.x *= -1.f;
+
+			ball.networkData.SetElement("Velocity", vel);
+			ball.networkData.SetElement("Position", ballPos);
+			client->SendGameObject(ball);
+		}
+	}
+}
+
+void App::CheckScreenCollision()
+{
+	GameObject ball = client->OtherObjects()[1000];
+	vec3 ballPos = ball.networkData.GetElement<vec3>("LocalPosition");
+	vec3 ballVel = ball.networkData.GetElement<vec3>("Velocity");
+	vec3 oldBallVel = ballVel;
+	vec3 signBall = glm::sign(ballVel);
+	vec2 windowPos = ToWindowPos(ballPos);
+
+	int width = getWindowWidth();
+	int height = getWindowHeight();
+
+	// If ball y pos outside screen height, flip velocity y
+	if ((windowPos.y < 0 && signBall.y < 0) ||
+		(windowPos.y > height && signBall.y > 0))
+		ballVel.y *= -1;
+
+	// Same for ball x pos / velocity x
+	if ((windowPos.x < 0 && signBall.x < 0) ||
+		(windowPos.x > width && signBall.x > 0))
+		ballVel.x *= -1;
+
+	if (ballVel != oldBallVel) // velocity has been changed, send network data
+	{
+		ball.networkData.SetElement("Velocity", ballVel);
+		ball.networkData.SetElement("Position", ballPos);
+		client->SendGameObject(ball);
 	}
 }

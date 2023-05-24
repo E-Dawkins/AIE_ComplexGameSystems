@@ -145,10 +145,14 @@ void Server::OnSpawnGameObject(RakNet::Packet* _packet)
 	
 	GameObject receivedObj;
 	receivedObj.Read(_packet);
-	receivedObj.id = m_nextServerID;
+
+	if (receivedObj.id == -1) // only set the id, if it doesn't already have one
+	{
+		receivedObj.id = m_nextServerID;
+		m_nextServerID++;
+	}
 
 	m_gameObjects[receivedObj.id] = receivedObj;
-	m_nextServerID++;
 
 	m_gameObjects[receivedObj.id].Write(m_pPeerInterface,
 		RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
