@@ -7,53 +7,47 @@
 Client::Client()
 {
 	m_gameobject = GameObject();
-	m_updateThread = std::thread(std::bind(&Client::update, this));
 }
 
 Client::~Client()
 {
 	OnClientDisconnect();
-	
-	// Set thread to stop updating, and join it to the main thread
-	m_shouldUpdate = false;
-	m_updateThread.join();
+
+	// Clear all the maps
+	m_otherClientGameObjects.clear();
+	m_onReceivedFunctions.clear();
+	m_otherObjectTs.clear();
 
 	delete m_pPeerInterface;
 }
 
-void Client::update() {
+void Client::update(float _dt) {
  
-	while (m_shouldUpdate)
+	if (m_networkDelay <= 0)
+		m_networkDelay = m_storedDelay;
+
+	// Check for network messages
+	HandleNetworkMessages();
+
+	// Update all other GameObjects
+	for (auto& otherClient : m_otherClientGameObjects)
 	{
-		// Delay the update to fake ~60fps
-		float dtMs = 1000.f / (float)FPS;
-		float dtS = dtMs * 0.001f;
+		//otherClient.second.Update(_dt);
 
-		// Cap frame count to the FPS, wrap it back to 0
-		FRAMECOUNT = (FRAMECOUNT + 1) % FPS;
-
-		HandleNetworkMessages();
-
-		// Update all other GameObjects
-		for (auto& otherClient : m_otherClientGameObjects)
+		switch (m_interpolationType)
 		{
-			otherClient.second.Update(dtS);
-
-			switch (m_interpolationType)
-			{
-			case Interpolation::LINEAR:
-				Interpolation_Linear(otherClient.second, dtS);
-				break;
-			case Interpolation::COSINE:
-				Interpolation_Cosine(otherClient.second, dtS);
-				break;
-			default:
-				Interpolation_None(otherClient.second);
-			}
+		case Interpolation::LINEAR:
+			Interpolation_Linear(otherClient.second, _dt);
+			break;
+		case Interpolation::COSINE:
+			Interpolation_Cosine(otherClient.second, _dt);
+			break;
+		default:
+			Interpolation_None(otherClient.second);
 		}
-
-		std::this_thread::sleep_for(std::chrono::milliseconds((int)std::ceil(dtMs)));
 	}
+
+	m_networkDelay -= _dt;
 }
 
 #pragma region Network Methods
@@ -80,6 +74,11 @@ void Client::InitialiseClientConnection()
 	{
 		std::cout << "Unable to connect. Error: " << res << std::endl;
 	}
+}
+
+void Client::AddOnReceiveCall(int _id, std::function<void(GameObject&)> _fn)
+{
+	m_onReceivedFunctions.insert({_id, _fn});
 }
 
 void Client::HandleNetworkMessages()
@@ -166,6 +165,13 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		GameObject object = GameObject();
 		object.Read(_packet);
 
+		// Reset object's t lerp value
+		m_otherObjectTs[object.id] = 0;
+
+		// If a received function exists, call it
+		if (m_onReceivedFunctions.contains(clientID))
+			m_onReceivedFunctions.at(clientID)(object);
+
 		if (m_otherClientGameObjects.count(object.id) == 0)
 		{
 			// new object - snap on first update
@@ -239,11 +245,13 @@ void Client::Interpolation_Linear(GameObject& _gameObject, float _dt)
 	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
 
 	vec3 vel = _gameObject.networkData.GetElement<vec3>("Velocity");
-	float frameMulti = 1.f / (float)(_gameObject.id >= 1000 ? FPS : NETWORKFRAME);
-	vec3 targetPos = pos + vel * frameMulti * _dt;
+	float lerpTotalFrames = (_gameObject.id >= 1000 ? 1.f : m_storedDelay) / _dt;
+	vec3 targetDiff = vel * _dt * lerpTotalFrames;
 
-	float t = (float)(FRAMECOUNT + 1) * frameMulti;
-	localPos = t * pos + (1.f - t) * targetPos;
+	float& t = m_otherObjectTs[_gameObject.id];
+	t += 1.f / lerpTotalFrames;
+
+	localPos = pos + (t * targetDiff);
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }
@@ -254,13 +262,14 @@ void Client::Interpolation_Cosine(GameObject& _gameObject, float _dt)
 	vec3 pos = _gameObject.networkData.GetElement<vec3>("Position");
 
 	vec3 vel = _gameObject.networkData.GetElement<vec3>("Velocity");
-	float frameMulti = 1.f / (float)(_gameObject.id >= 1000 ? FPS : NETWORKFRAME);
-	
-	vec3 targetPos = pos + vel * frameMulti * _dt;
-	float t = (float)(FRAMECOUNT + 1) * frameMulti;
+	float lerpTotalFrames = (_gameObject.id >= 1000 ? 1.f : m_storedDelay) / _dt;
+	vec3 targetDiff = vel * _dt * lerpTotalFrames;
+
+	float& t = m_otherObjectTs[_gameObject.id];
+	t += 1.f / lerpTotalFrames;
 
 	float tCos = (1 - cosf(t * glm::pi<float>())) * 0.5f;
-	localPos = tCos * pos + (1.f - tCos) * targetPos;
+	localPos = pos + (t * targetDiff);
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }

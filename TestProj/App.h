@@ -1,12 +1,14 @@
 #pragma once
 #include "Application.h"
-#include <glm/ext.hpp>
-#include <glm/mat4x4.hpp>
 #include "Gizmos.h"
 #include "Input.h"
-#include <iostream>
-
 #include "Client.h"
+#include "Renderer2D.h"
+#include "Font.h"
+#include <string>
+#include <glm/ext.hpp>
+#include <glm/mat4x4.hpp>
+#include <iostream>
 
 using glm::vec2;
 using glm::vec3;
@@ -28,17 +30,23 @@ public:
 
 	Client* client = new Client();
 
-	void OnFirstSend();
-	void CheckPaddleCollision();
-	void CheckScreenCollision();
-
 protected:
+	aie::Renderer2D* m_2dRenderer;
+	aie::Font* m_font;
+
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
 	vec2 m_windowSize;
 
 	bool m_firstSend = true;
+	bool m_canSetScore = true;
 
+	void OnFirstSend();
+	void CheckPaddleCollision();
+	void CheckScreenCollision();
+	void OnBallReceived(GameObject& _gameobject);
+
+	// Helper functions
 	vec2 ToWindowPos(glm::vec3 _worldPos)
 	{
 		vec4 clipPos = m_projectionMatrix * (m_viewMatrix * vec4(_worldPos, 1.0));;

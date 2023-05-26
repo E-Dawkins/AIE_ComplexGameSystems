@@ -39,7 +39,7 @@ void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface,
 		bs.Write(key);
 
 		// ...and the bytes for each element
-		bs.Write(i.second.size());
+		bs.Write((int)i.second.size());
 
 		for (auto byte : i.second)
 		{
@@ -73,7 +73,7 @@ void GameObject::Read(RakNet::Packet* _packet)
 		bsIn.Read(key);
 
 		// ...the bytes into a vector...
-		size_t byteCount;
+		int byteCount;
 		bsIn.Read(byteCount);
 
 		std::vector<unsigned char> bytes;

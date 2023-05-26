@@ -79,7 +79,7 @@ public:
 		{
 			return T();
 		}
-		
+
 		// Does contain key, return bytes -> T
 		return FromBytes<T>(m_data[_Key]);
 	}
@@ -163,7 +163,7 @@ public:
 
 		// Guarantee that this vector is the same size as the object
 		bytes.resize(sizeof(out));
-		
+
 		// The address to copy the individual bytes to
 		auto copyAddr = reinterpret_cast<unsigned char*>(std::addressof(out));
 

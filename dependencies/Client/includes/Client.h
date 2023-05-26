@@ -6,7 +6,6 @@
 #include "GameObject.h"
 #include <unordered_map>
 
-#include <thread>
 #include <functional>
 
 class Client {
@@ -15,16 +14,19 @@ public:
 	Client();
 	~Client();
 
-	void update();
+	void update(float _dt);
 
 	void SetIP(const char* _ip)					{ IP = _ip; }
 	void SetPORT(unsigned short _port)			{ PORT = _port; }
 	void SetInterpolation(int _interpolation)	{ m_interpolationType = _interpolation % 3; };
-	void SetFPS(int _fps)						{ FPS = _fps; }
-	void SetNetworkFrameDelay(int _delay)		{ NETWORKFRAME = _delay; }
+	void SetNetworkDelay(float _seconds)		
+	{ 
+		m_networkDelay = _seconds;
+		m_storedDelay = m_networkDelay;
+	}
 
 	NetworkData& Data() { return m_gameobject.networkData; }
-	bool NetworkFrame() { return FRAMECOUNT % NETWORKFRAME == 0; }
+	bool NetworkFrame() { return m_networkDelay <= 0; }
 
 	int ID() { return m_gameobject.id; }
 	bool IsConnected() 
@@ -49,6 +51,7 @@ public:
 	void SendClientObject();
 	void SendGameObject(GameObject _gameObject);
 	void InitialiseClientConnection();
+	void AddOnReceiveCall(int _id, std::function<void(GameObject&)> _fn);
 
 protected:
 	void HandleNetworkMessages();
@@ -72,16 +75,14 @@ protected:
 	glm::vec3 m_facing;
 
 	std::unordered_map<int, GameObject> m_otherClientGameObjects;
+	std::unordered_map<int, std::function<void(GameObject&)>> m_onReceivedFunctions;
+	std::unordered_map<int, float> m_otherObjectTs;
 
 	glm::mat4 m_viewMatrix;
 	glm::mat4 m_projectionMatrix;
 
-	int FRAMECOUNT = -1; // -1 so first frame is 0
-	int NETWORKFRAME = 3; // frame gap between sending network data
-	int FPS = 60;
-
-	bool m_shouldUpdate = true;
-	std::thread m_updateThread;
+	float m_networkDelay = 0.1f;
+	float m_storedDelay = m_networkDelay;
 
 	bool m_serverFull = false;
 };

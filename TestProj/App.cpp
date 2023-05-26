@@ -7,6 +7,9 @@ bool App::startup()
 	// initialise gizmo primitive counts
 	Gizmos::create(10000, 10000, 10000, 10000);
 
+	m_2dRenderer = new aie::Renderer2D();
+	m_font = new aie::Font("./font/consolas.ttf", 50);
+
 	m_windowSize = vec2(getWindowWidth(), getWindowHeight());
 
 	// create simple camera transforms
@@ -21,6 +24,9 @@ bool App::startup()
 	// Set client defaults
 	client->Data().SetElement("Size", vec3(.2f, 1.5f, 1.5f));
 	client->Data().SetElement("Color", vec4(0.45f, 0.04f, 0.51f, 1.f));
+	client->Data().SetElement("Score", 0);
+
+	client->AddOnReceiveCall(1000, [this](GameObject& _obj) {App::OnBallReceived(_obj);});
 
 	return true;
 }
@@ -29,10 +35,15 @@ void App::shutdown()
 {
 	Gizmos::destroy();
 	delete client;
+	delete m_2dRenderer;
+	delete m_font;
 }
 
 void App::update(float deltaTime)
 {
+	// Update client
+	client->update(deltaTime);
+
 	if (client->ID() != -1 && m_firstSend)
 	{
 		OnFirstSend();
@@ -49,7 +60,6 @@ void App::update(float deltaTime)
 	
 	// Store previous position and velocity
 	static vec3 oldPosition = pos;
-	static vec3 oldVelocity = vel;
 
 	// zeroed in case no keys are pressed
 	vel = vec3(0);
@@ -65,15 +75,18 @@ void App::update(float deltaTime)
 
 	// Only send a network message when we change
 	// our movement state, and it is a network frame
-	if ((oldVelocity != vel || oldPosition != pos) && client->NetworkFrame())
+	if (oldPosition != pos && client->NetworkFrame())
 	{
 		client->SendClientObject();
 		oldPosition = pos;
-		oldVelocity = vel;
 	}
 
-	CheckPaddleCollision();
-	CheckScreenCollision();
+	// Only check collision if the ball has been spawned
+	if (client->OtherObjects().contains(1000))
+	{
+		CheckPaddleCollision();
+		CheckScreenCollision();
+	}
 
 	// Quit if the player presses 'esc' or server full
 	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE) || client->IsServerFull())
@@ -100,7 +113,7 @@ void App::draw()
 	Gizmos::addCapsule(pos, size.y, size.x, 10, 10, color);
 
 	// Draw other clients bodies
-	for (auto otherClient : client->OtherObjects())
+	for (auto& otherClient : client->OtherObjects())
 	{
 		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
 		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
@@ -111,6 +124,21 @@ void App::draw()
 		
 		else Gizmos::addCapsule(localPos, size.y, size.x, 8, 8, color);
 	}
+
+	// Draw text / sprites
+	m_2dRenderer->begin();
+
+	// Draw client score
+	int score = client->Data().GetElement<int>("Score");
+	std::string scoreStr = std::to_string(score);
+	m_2dRenderer->drawText(m_font, scoreStr.c_str(), ToWindowPos(pos).x, getWindowHeight() - 75);
+
+	// Draw other client score
+	score = client->OtherObjects()[3 - client->ID()].networkData.GetElement<int>("Score");
+	scoreStr = std::to_string(score);
+	m_2dRenderer->drawText(m_font, scoreStr.c_str(), ToWindowPos(-pos).x, getWindowHeight() - 75);
+
+	m_2dRenderer->end();
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
@@ -179,15 +207,33 @@ void App::CheckScreenCollision()
 		(windowPos.y > height && signBall.y > 0))
 		ballVel.y *= -1;
 
-	// Same for ball x pos / velocity x
-	if ((windowPos.x < 0 && signBall.x < 0) ||
-		(windowPos.x > width && signBall.x > 0))
-		ballVel.x *= -1;
+	// Same for x, only for side client is on and update their score
+	if ((windowPos.x < 0 && client->ID() == 1 && signBall.x < 0) ||
+		(windowPos.x > width && client->ID() == 2 && signBall.x > 0))
+	{
+		if (m_canSetScore)
+		{
+			ballVel.x *= -1;
+			ballPos = vec3(0);
+			int score = client->Data().GetElement<int>("Score") + 1;
+			client->Data().SetElement("Score", score);
+			client->SendClientObject();
+			m_canSetScore = false;
+		}
+	}
 
 	if (ballVel != oldBallVel) // velocity has been changed, send network data
 	{
 		ball.networkData.SetElement("Velocity", ballVel);
 		ball.networkData.SetElement("Position", ballPos);
 		client->SendGameObject(ball);
+	}
+}
+
+void App::OnBallReceived(GameObject& _gameobject)
+{
+	if (_gameobject.networkData.GetElement<vec3>("Position") == vec3(0))
+	{
+		m_canSetScore = true;
 	}
 }
