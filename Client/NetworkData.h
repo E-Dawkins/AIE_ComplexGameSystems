@@ -1,5 +1,8 @@
 #pragma once
 #include <unordered_map>
+#include <vector>
+
+using std::vector;
 
 class NetworkData
 {
@@ -8,32 +11,35 @@ public:
 	template <typename T> void Insert(const char* _Key, T _Val)
 	{
 		// Already contains key, exit
-		if (Contains(_Key, m_out))
+		if (Contains(_Key))
 			return;
 
 		// Doesn't contain key, add it
 		std::vector<unsigned char> data = ToBytes(_Val);
-		m_data.insert({ _Key, data });
+		m_keys.push_back(_Key);
+		m_vals.push_back(data);
 	}
 
 	// Inserts a key-value pair {const char*, known vector of bytes}
 	void InsertBytes(const char* _Key, std::vector<unsigned char> _Val)
 	{
 		// Already contains key, exit
-		if (Contains(_Key, m_out))
+		if (Contains(_Key))
 			return;
 
 		// Doesn't contain key, add it
-		m_data.insert({ _Key, _Val });
+		m_keys.push_back(_Key);
+		m_vals.push_back(_Val);
 	}
 
 	// Sets element with _Key to _Val, if it exists, otherwise inserts it
 	template <typename T> void SetElement(const char* _Key, T _Val)
 	{
 		// If contains key, overwrite the value...
-		if (Contains(_Key, m_out))
+		int index = Index(_Key);
+		if (index != -1)
 		{
-			m_out->second = ToBytes(_Val);
+			m_vals[index] = ToBytes(_Val);
 			return;
 		}
 
@@ -45,9 +51,10 @@ public:
 	void SetElementBytes(const char* _Key, std::vector<unsigned char> _Val)
 	{
 		// Already contains key, set value to _Val...
-		if (Contains(_Key, m_out))
+		int index = Index(_Key);
+		if (index != -1)
 		{
-			m_out->second = _Val;
+			m_vals[index] = _Val;
 			return;
 		}
 
@@ -59,39 +66,41 @@ public:
 	void Erase(const char* _Key)
 	{
 		// Only erase _Key if it exists in the network data
-		if (Contains(_Key, m_out))
+		int index = Index(_Key);
+		if (index != -1)
 		{
-			m_data.erase(_Key);
+			m_keys.erase(m_keys.begin() + index);
+			m_vals.erase(m_vals.begin() + index);
 		}
 	}
 
-	// Clears unordered_map 'm_data'
+	// Clears both vectors
 	void Clear()
 	{
-		m_data.clear();
+		m_keys.clear();
+		m_vals.clear();
 	}
 
 	// Gets element with _Key, throws if none exists
 	template <typename T> T GetElement(const char* _Key)
 	{
 		// Doesn't contain key, return new object of type T
-		if (!Contains(_Key, m_out))
+		int index = Index(_Key);
+		if (index == -1)
 		{
 			return T();
 		}
 
 		// Does contain key, return bytes -> T
-		return FromBytes<T>(m_data[_Key]);
+		return FromBytes<T>(m_vals[index]);
 	}
 
-	// Checks if unordered_map 'm_data' contains _Key
-	bool Contains(const char* _Key, std::pair<const char* const, std::vector<unsigned char>>*& _Out)
+	// Checks if m_keys contains _Key
+	bool Contains(const char* _Key)
 	{
-		bool allCharsSame = false;
-
-		for (auto& member : m_data) // loop through each data member in m_data
+		for (auto member : m_keys)
 		{
-			size_t size = strlen(member.first);
+			size_t size = strlen(member);
 
 			// Strings not same length, skip to next one
 			if (size != strlen(_Key))
@@ -101,9 +110,9 @@ public:
 			// is same as the length of the string they are equal
 			int sameChars = 0;
 
-			for (int i = 0; i < (int)size; i++) // loop through chars of each member name
+			for (int i = 0; i < (int)size; i++) // loop through chars of each member
 			{
-				if (member.first[i] == _Key[i]) // char is same, update count
+				if (member[i] == _Key[i]) // char is same, update count
 					sameChars++;
 
 				else break; // not same, break immediately
@@ -112,23 +121,50 @@ public:
 			// Char count same, so they are the same string
 			if (sameChars == (int)size)
 			{
-				allCharsSame = true;
-				_Out = &member;
-				break;
+				return true;
 			}
 		}
 
-		// If returning false, set _Out to nullptr
-		if (!allCharsSame)
-			_Out = nullptr;
-
-		return allCharsSame;
+		return false;
 	}
 
-	// Returns amount of elements in unordered_map 'm_data'
+	// Return index of _Key if it exists in m_keys
+	int Index(const char* _Key)
+	{
+		for (int i = 0; i < m_keys.size(); i++)
+		{
+			size_t size = strlen(m_keys[i]);
+
+			// Strings not same length, skip to next one
+			if (size != strlen(_Key))
+				continue;
+
+			// Count the number of same chars, if this count
+			// is same as the length of the string they are equal
+			int sameChars = 0;
+
+			for (int j = 0; j < (int)size; j++) // loop through chars of each member
+			{
+				if (m_keys[i][j] == _Key[j]) // char is same, update count
+					sameChars++;
+
+				else break; // not same, break immediately
+			}
+
+			// Char count same, so they are the same string
+			if (sameChars == (int)size)
+			{
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	// Returns amount of elements in vectors
 	int Size()
 	{
-		return (int)m_data.size();
+		return (int)m_keys.size();
 	}
 
 	// Converts T object to vector of its' bytes (unsigned char)
@@ -184,13 +220,19 @@ public:
 		return out;
 	}
 
-	// Returns reference to unordered_map 'm_data'
-	std::unordered_map<const char*, std::vector<unsigned char>>& Data()
+	// Returns reference to m_keys
+	vector<const char*>& Keys()
 	{
-		return m_data;
+		return m_keys;
+	}
+
+	// Returns reference to m_vals
+	vector<vector<unsigned char>>& Values()
+	{
+		return m_vals;
 	}
 
 protected:
-	std::unordered_map<const char*, std::vector<unsigned char>> m_data;
-	std::pair<const char* const, std::vector<unsigned char>>* m_out = nullptr;
+	vector<const char*> m_keys;
+	vector<vector<unsigned char>> m_vals;
 };

@@ -24,7 +24,7 @@ bool App::startup()
 	// Set client defaults
 	client->Data().SetElement("Size", vec3(.2f, 1.5f, 1.5f));
 	client->Data().SetElement("Color", vec4(0.45f, 0.04f, 0.51f, 1.f));
-	client->Data().SetElement("Score", 0);
+	client->Data().SetElement("Score", 1);
 
 	client->AddOnReceiveCall(1000, [this](GameObject& _obj) {App::OnBallReceived(_obj);});
 

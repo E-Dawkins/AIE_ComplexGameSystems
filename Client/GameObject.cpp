@@ -1,6 +1,8 @@
 #include "GameObject.h"
 #include <BitStream.h>
 #include "../Server/GameMessages.h"
+#include <iostream>
+#include <StringCompressor.h>
 
 // Store default data into gameobject network data
 GameObject::GameObject()
@@ -32,16 +34,16 @@ void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface,
 	bs.Write(networkData.Size());
 
 	// Foreach data element, write out...
-	for (const auto &i : networkData.Data())
+	for (int i = 0; i < networkData.Size(); i++)
 	{
 		// ...the name of the element...
-		RakNet::RakString key = i.first;
-		bs.Write(key);
+		RakNet::RakString temp = networkData.Keys()[i];
+		bs.Write(temp);
 
 		// ...and the bytes for each element
-		bs.Write((int)i.second.size());
+		bs.Write((int)networkData.Values()[i].size());
 
-		for (auto byte : i.second)
+		for (auto byte : networkData.Values()[i])
 		{
 			bs.Write(byte);
 		}
@@ -79,9 +81,9 @@ void GameObject::Read(RakNet::Packet* _packet)
 		std::vector<unsigned char> bytes;
 		bytes.resize(byteCount);
 
-		for (int j = 0; j < (int)byteCount; j++)
+		for (int j = 0; j < byteCount; j++)
 		{
-			bsIn.Read((char*)&bytes[j], sizeof(unsigned char));
+			bsIn.Read(bytes[j]);
 		}
 		
 		// ...then overwrite stored elements
