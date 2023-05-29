@@ -31,8 +31,9 @@ public:
 	Client* client = new Client();
 
 protected:
-	aie::Renderer2D* m_2dRenderer;
-	aie::Font* m_font;
+	aie::Renderer2D* m_2dRenderer = nullptr;
+	aie::Font* m_font = nullptr;
+	aie::Font* m_fontHalf = nullptr;
 
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
@@ -40,11 +41,20 @@ protected:
 
 	bool m_firstSend = true;
 	bool m_canSetScore = true;
+	int m_winner = -1;
+	int m_maxScore = 1;
 
+	// Logic functions
 	void OnFirstSend();
+	void CheckInput(float _dt);
 	void CheckPaddleCollision();
 	void CheckScreenCollision();
 	void OnBallReceived(GameObject& _gameobject);
+
+	// Visuals functions
+	void DrawScene();
+	void DrawUI();
+	void DrawWinUI();
 
 	// Helper functions
 	vec2 ToWindowPos(glm::vec3 _worldPos)

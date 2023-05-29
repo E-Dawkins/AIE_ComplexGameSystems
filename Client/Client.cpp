@@ -32,8 +32,6 @@ void Client::update(float _dt) {
 	// Update all other GameObjects
 	for (auto& otherClient : m_otherClientGameObjects)
 	{
-		//otherClient.second.Update(_dt);
-
 		switch (m_interpolationType)
 		{
 		case Interpolation::LINEAR:
@@ -76,7 +74,7 @@ void Client::InitialiseClientConnection()
 	}
 }
 
-void Client::AddOnReceiveCall(int _id, std::function<void(GameObject&)> _fn)
+void Client::AddOnReceiveCall(int _id, std::function<void(GameObject& _gameObject)> _fn)
 {
 	m_onReceivedFunctions.insert({_id, _fn});
 }
@@ -160,7 +158,7 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 	int clientID;
 	bsIn.Read(clientID);
 
-	if (clientID != m_gameobject.id && clientID != -1)
+	if (clientID != m_gameobject.id)
 	{
 		GameObject object = GameObject();
 		object.Read(_packet);
@@ -249,7 +247,7 @@ void Client::Interpolation_Linear(GameObject& _gameObject, float _dt)
 	vec3 targetDiff = vel * _dt * lerpTotalFrames;
 
 	float& t = m_otherObjectTs[_gameObject.id];
-	t += 1.f / lerpTotalFrames;
+	t = glm::clamp(t + (1.f / lerpTotalFrames), 0.f, 1.f);
 
 	localPos = pos + (t * targetDiff);
 
@@ -266,10 +264,10 @@ void Client::Interpolation_Cosine(GameObject& _gameObject, float _dt)
 	vec3 targetDiff = vel * _dt * lerpTotalFrames;
 
 	float& t = m_otherObjectTs[_gameObject.id];
-	t += 1.f / lerpTotalFrames;
+	t = glm::clamp(t + (1.f / lerpTotalFrames), 0.f, 1.f);
 
 	float tCos = (1 - cosf(t * glm::pi<float>())) * 0.5f;
-	localPos = pos + (t * targetDiff);
+	localPos = pos + (tCos * targetDiff);
 
 	_gameObject.networkData.SetElement("LocalPosition", localPos);
 }

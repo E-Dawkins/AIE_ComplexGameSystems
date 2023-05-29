@@ -13,7 +13,7 @@ int main() {
 	ipInput = (ipInput == "self" ? "127.0.0.1" : ipInput);
 
 	app->client->SetIP(ipInput.c_str());
-	app->client->SetInterpolation(Client::Interpolation::COSINE);
+	app->client->SetInterpolation(Client::LINEAR);
 	app->client->SetNetworkDelay(0.05f);
 
 	app->run("AIE", 1280, 720, false);

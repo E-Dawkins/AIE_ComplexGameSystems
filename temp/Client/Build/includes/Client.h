@@ -40,6 +40,7 @@ public:
 	bool IsServerFull() { return m_serverFull; }
 
 	std::unordered_map<int, GameObject> OtherObjects() { return m_otherClientGameObjects; }
+	NetworkData& OtherData(int _id) { return m_otherClientGameObjects[_id].networkData; }
 
 	enum Interpolation
 	{
@@ -51,7 +52,7 @@ public:
 	void SendClientObject();
 	void SendGameObject(GameObject _gameObject);
 	void InitialiseClientConnection();
-	void AddOnReceiveCall(int _id, std::function<void(GameObject&)> _fn);
+	void AddOnReceiveCall(int _id, std::function<void(GameObject& _gameObject)> _fn);
 
 protected:
 	void HandleNetworkMessages();
@@ -75,7 +76,7 @@ protected:
 	glm::vec3 m_facing;
 
 	std::unordered_map<int, GameObject> m_otherClientGameObjects;
-	std::unordered_map<int, std::function<void(GameObject&)>> m_onReceivedFunctions;
+	std::unordered_map<int, std::function<void(GameObject& _gameObject)>> m_onReceivedFunctions;
 	std::unordered_map<int, float> m_otherObjectTs;
 
 	glm::mat4 m_viewMatrix;

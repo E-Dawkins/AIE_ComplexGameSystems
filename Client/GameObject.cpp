@@ -37,8 +37,13 @@ void GameObject::Write(RakNet::RakPeerInterface* _pPeerInterface,
 	for (int i = 0; i < networkData.Size(); i++)
 	{
 		// ...the name of the element...
-		RakNet::RakString temp = networkData.Keys()[i];
-		bs.Write(temp);
+		std::vector<char> key = networkData.StringToVector(networkData.Keys()[i]);
+		bs.Write((int)key.size());
+
+		for (auto c : key)
+		{
+			bs.Write(c);
+		}
 
 		// ...and the bytes for each element
 		bs.Write((int)networkData.Values()[i].size());
@@ -71,8 +76,18 @@ void GameObject::Read(RakNet::Packet* _packet)
 	for (int i = 0; i < dataAmount; i++)
 	{
 		// ...the name of the element and...
-		RakNet::RakString key;
-		bsIn.Read(key);
+		int charCount;
+		bsIn.Read(charCount);
+
+		std::vector<char> key;
+		key.resize(charCount);
+
+		for (int j = 0; j < charCount; j++)
+		{
+			bsIn.Read(key[j]);
+		}
+
+		const char* keyStr = networkData.VectorToString(key);
 
 		// ...the bytes into a vector...
 		int byteCount;
@@ -87,7 +102,7 @@ void GameObject::Read(RakNet::Packet* _packet)
 		}
 		
 		// ...then overwrite stored elements
-		networkData.SetElementBytes(key.C_String(), bytes);
+		networkData.SetElementBytes(keyStr, bytes);
 	}
 }
 

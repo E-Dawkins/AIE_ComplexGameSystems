@@ -131,7 +131,7 @@ public:
 	// Return index of _Key if it exists in m_keys
 	int Index(const char* _Key)
 	{
-		for (int i = 0; i < m_keys.size(); i++)
+		for (int i = 0; i < (int)m_keys.size(); i++)
 		{
 			size_t size = strlen(m_keys[i]);
 
@@ -218,6 +218,31 @@ public:
 		}
 
 		return out;
+	}
+
+	// Converts from const char* to vector<char>
+	vector<char> StringToVector(const char* _str)
+	{
+		vector<char> chars;
+
+		for (int i = 0; i < (int)strlen(_str); i++)
+			chars.push_back(_str[i]);
+
+		return chars;
+	}
+
+	// Converts from vector<char> to const char*
+	const char* VectorToString(vector<char> _vec)
+	{
+		const int size = _vec.size();
+		char* str = new char[size + 1];
+
+		for (int i = 0; i < size; i++)
+			str[i] = _vec[i];
+
+		str[size] = '\0';
+
+		return str;
 	}
 
 	// Returns reference to m_keys

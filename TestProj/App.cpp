@@ -9,11 +9,11 @@ bool App::startup()
 
 	m_2dRenderer = new aie::Renderer2D();
 	m_font = new aie::Font("./font/consolas.ttf", 50);
+	m_fontHalf = new aie::Font("./font/consolas.ttf", 25);
 
 	m_windowSize = vec2(getWindowWidth(), getWindowHeight());
 
 	// create simple camera transforms
-	// glm::lookAt(camera position, camera target, camera up)
 	m_viewMatrix = glm::lookAt(vec3(0,0,10), vec3(0), vec3(0, 1, 0));
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
 		getWindowWidth() / (float)getWindowHeight(),
@@ -24,9 +24,9 @@ bool App::startup()
 	// Set client defaults
 	client->Data().SetElement("Size", vec3(.2f, 1.5f, 1.5f));
 	client->Data().SetElement("Color", vec4(0.45f, 0.04f, 0.51f, 1.f));
-	client->Data().SetElement("Score", 1);
+	client->Data().SetElement("Score", 0);
 
-	client->AddOnReceiveCall(1000, [this](GameObject& _obj) {App::OnBallReceived(_obj);});
+	client->AddOnReceiveCall(1000, [this](GameObject& _gO) {OnBallReceived(_gO); });
 
 	return true;
 }
@@ -37,48 +37,25 @@ void App::shutdown()
 	delete client;
 	delete m_2dRenderer;
 	delete m_font;
+	delete m_fontHalf;
 }
 
 void App::update(float deltaTime)
 {
+	// Don't update if a player has already won
+	if (m_winner != -1)
+		return;
+
 	// Update client
 	client->update(deltaTime);
 
+	// Check input
+	CheckInput(deltaTime);
+
+	// Run this function the frame we are set an id
 	if (client->ID() != -1 && m_firstSend)
 	{
 		OnFirstSend();
-	}
-
-	// wipe the gizmos clean for this frame
-	Gizmos::clear();
-
-	// quit if we press escape
-	aie::Input* input = aie::Input::getInstance();
-
-	vec3 pos = client->Data().GetElement<vec3>("Position");
-	vec3 vel = client->Data().GetElement<vec3>("Velocity");
-	
-	// Store previous position and velocity
-	static vec3 oldPosition = pos;
-
-	// zeroed in case no keys are pressed
-	vel = vec3(0);
-
-	float verticalInput = input->isKeyDown(aie::INPUT_KEY_UP) - input->isKeyDown(aie::INPUT_KEY_DOWN);
-	pos.y += 10.f * deltaTime * verticalInput;
-	vel.y += 10.f * verticalInput;
-
-	pos.x = (client->ID() == 1) ? -5.f : 5.f;
-
-	client->Data().SetElement("Position", pos);
-	client->Data().SetElement("Velocity", vel);
-
-	// Only send a network message when we change
-	// our movement state, and it is a network frame
-	if (oldPosition != pos && client->NetworkFrame())
-	{
-		client->SendClientObject();
-		oldPosition = pos;
 	}
 
 	// Only check collision if the ball has been spawned
@@ -88,11 +65,15 @@ void App::update(float deltaTime)
 		CheckScreenCollision();
 	}
 
-	// Quit if the player presses 'esc' or server full
-	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE) || client->IsServerFull())
-	{
-		quit();
-	}
+	// Check if either player has won
+	int clientScore = client->Data().GetElement<int>("Score");
+	int otherScore = client->OtherData(3 - client->ID()).GetElement<int>("Score");
+
+	if (clientScore >= m_maxScore)
+		m_winner = client->ID();
+
+	else if (otherScore >= m_maxScore)
+		m_winner = 3 - client->ID();
 }
 
 void App::draw()
@@ -100,52 +81,35 @@ void App::draw()
 	// wipe the screen to the background colour
 	clearScreen();
 
+	// wipe the gizmos clean for this frame
+	Gizmos::clear();
+
 	// update perspective in case window resized
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
 		getWindowWidth() / (float)getWindowHeight(),
 		0.1f, 1000.f);
 
-	// Draw body
-	vec3 pos = client->Data().GetElement<vec3>("Position");
-	vec4 color = client->Data().GetElement<vec4>("Color");
-	vec3 size = client->Data().GetElement<vec3>("Size");
-
-	Gizmos::addCapsule(pos, size.y, size.x, 10, 10, color);
-
-	// Draw other clients bodies
-	for (auto& otherClient : client->OtherObjects())
-	{
-		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
-		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
-		vec3 size = otherClient.second.networkData.GetElement<vec3>("Size");
-
-		if (otherClient.first == 1000) // the ball
-			Gizmos::addSphere(localPos, glm::length(size), 8, 8, color);
-		
-		else Gizmos::addCapsule(localPos, size.y, size.x, 8, 8, color);
-	}
-
-	// Draw text / sprites
-	m_2dRenderer->begin();
-
-	// Draw client score
-	int score = client->Data().GetElement<int>("Score");
-	std::string scoreStr = std::to_string(score);
-	m_2dRenderer->drawText(m_font, scoreStr.c_str(), ToWindowPos(pos).x, getWindowHeight() - 75);
-
-	// Draw other client score
-	score = client->OtherObjects()[3 - client->ID()].networkData.GetElement<int>("Score");
-	scoreStr = std::to_string(score);
-	m_2dRenderer->drawText(m_font, scoreStr.c_str(), ToWindowPos(-pos).x, getWindowHeight() - 75);
-
-	m_2dRenderer->end();
+	DrawScene();
+	DrawUI();
+	
+	if (m_winner != -1) // game is over, draw win screen
+		DrawWinUI();
 
 	Gizmos::draw(m_projectionMatrix * m_viewMatrix);
 }
 
+#pragma region Logic
+
 // This runs on the first frame that client has been set an id
 void App::OnFirstSend()
 {
+	// Move player's x pos to their side of the screen
+	vec3 pos = client->Data().GetElement<vec3>("Position");
+	pos.x = (client->ID() == 1) ? -5.f : 5.f;
+	client->Data().SetElement("Position", pos);
+
+	// Send the client object to the server, we do it like
+	// this so we can set the data up before sending it
 	client->SendClientObject();
 	m_firstSend = false;
 
@@ -158,6 +122,41 @@ void App::OnFirstSend()
 		ball.networkData.SetElement("Velocity", vec3(0.94f, 0.342f, 0) * 3.f);
 		ball.lifeDecays = false;
 		client->SendGameObject(ball);
+	}
+}
+
+void App::CheckInput(float _dt)
+{
+	aie::Input* input = aie::Input::getInstance();
+
+	// Store previous position and velocity
+	static vec3 oldPosition = client->Data().GetElement<vec3>("Position");
+	static vec3 oldVelocity = client->Data().GetElement<vec3>("Velocity");
+
+	// Store position and velocity of this frame
+	vec3 vel = vec3(0);
+	vec3 pos = client->Data().GetElement<vec3>("Position");
+
+	float verticalInput = input->isKeyDown(aie::INPUT_KEY_UP) - input->isKeyDown(aie::INPUT_KEY_DOWN);
+	pos.y += 10.f * _dt * verticalInput;
+	vel.y = 10.f * verticalInput;
+
+	client->Data().SetElement("Position", pos);
+	client->Data().SetElement("Velocity", vel);
+
+	// Only send a network message when we change
+	// our movement state, and it is a network frame
+	if ((oldPosition != pos || oldVelocity != vel) && client->NetworkFrame())
+	{
+		client->SendClientObject();
+		oldPosition = pos;
+		oldVelocity = vel;
+	}
+
+	// Quit if the player presses 'esc' or server full
+	if (input->isKeyDown(aie::INPUT_KEY_ESCAPE) || client->IsServerFull())
+	{
+		quit();
 	}
 }
 
@@ -237,3 +236,77 @@ void App::OnBallReceived(GameObject& _gameobject)
 		m_canSetScore = true;
 	}
 }
+
+#pragma endregion Logic
+
+#pragma region Visuals
+
+void App::DrawScene()
+{
+	// Draw our body
+	vec3 pos = client->Data().GetElement<vec3>("Position");
+	vec4 color = client->Data().GetElement<vec4>("Color");
+	vec3 size = client->Data().GetElement<vec3>("Size");
+
+	Gizmos::addCapsule(pos, size.y, size.x, 10, 10, color);
+
+	// Draw other clients bodies
+	for (auto& otherClient : client->OtherObjects())
+	{
+		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
+		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
+		vec3 size = otherClient.second.networkData.GetElement<vec3>("Size");
+
+		if (otherClient.first == 1000) // the ball
+			Gizmos::addSphere(localPos, glm::length(size), 8, 8, color);
+
+		else Gizmos::addCapsule(localPos, size.y, size.x, 8, 8, color);
+	}
+}
+
+void App::DrawUI()
+{
+	int id = client->ID();
+	int clientScore = client->Data().GetElement<int>("Score");
+	int otherClientScore = client->OtherData(3 - id).GetElement<int>("Score");
+
+	vec3 pos = client->Data().GetElement<vec3>("Position");
+
+	// Draw text / sprites
+	m_2dRenderer->begin();
+
+	m_2dRenderer->setRenderColour(1, 1, 1);
+
+	// Draw client score
+	m_2dRenderer->drawText(m_font, std::to_string(clientScore).c_str(), 
+		ToWindowPos(pos).x, getWindowHeight() - 75);
+
+	// Draw other client score
+	m_2dRenderer->drawText(m_font, std::to_string(otherClientScore).c_str(), 
+		ToWindowPos(-pos).x, getWindowHeight() - 75);
+
+	m_2dRenderer->end();
+}
+
+void App::DrawWinUI()
+{
+	m_2dRenderer->begin();
+
+	m_2dRenderer->setRenderColour(0, 0, 0);
+	m_2dRenderer->drawBox(m_windowSize.x * .5f, m_windowSize.y * .5f, 400, 100);
+	m_2dRenderer->drawBox(m_windowSize.x * .5f, m_windowSize.y * .5f - 50, 200, 50);
+
+	const char* text = "Player 2 Won!";
+	const char* text2 = "'r' to replay";
+
+	float tOffset = m_2dRenderer->measureTextWidth(m_font, text);
+	float tOffset2 = m_2dRenderer->measureTextWidth(m_fontHalf, text2);
+
+	m_2dRenderer->setRenderColour(1, 1, 1);
+	m_2dRenderer->drawText(m_font, text, (m_windowSize.x - tOffset) * .5f, m_windowSize.y * .5f - 15);
+	m_2dRenderer->drawText(m_fontHalf, text2, (m_windowSize.x - tOffset2) * .5f, m_windowSize.y * .5f - 65);
+
+	m_2dRenderer->end();
+}
+
+#pragma endregion Visuals
