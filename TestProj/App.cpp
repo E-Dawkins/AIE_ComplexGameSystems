@@ -10,6 +10,8 @@ bool App::startup()
 	m_2dRenderer = new aie::Renderer2D();
 	m_font = new aie::Font("./font/consolas.ttf", 50);
 	m_fontHalf = new aie::Font("./font/consolas.ttf", 25);
+	m_background = new aie::Texture("./textures/background.png");
+	m_ballTex = new aie::Texture("./textures/ball.png");
 
 	// create simple camera transforms
 	m_viewMatrix = glm::lookAt(vec3(0,0,10), vec3(0), vec3(0, 1, 0));
@@ -35,6 +37,8 @@ void App::shutdown()
 	delete m_2dRenderer;
 	delete m_font;
 	delete m_fontHalf;
+	delete m_background;
+	delete m_ballTex;
 }
 
 void App::update(float deltaTime)
@@ -117,7 +121,7 @@ void App::GameSetup(float _dt)
 void App::SpawnBall()
 {
 	GameObject ball = GameObject();
-	ball.networkData.SetElement("Size", vec3(0.1f));
+	ball.networkData.SetElement("Size", vec3(.5f));
 	ball.networkData.SetElement("Color", vec4(1));
 	ball.networkData.SetElement("Velocity", vec3(glm::circularRand(3.f), 0));
 	ball.lifeDecays = false;
@@ -170,7 +174,8 @@ void App::CheckPaddleCollision()
 	vec3 ballPos = ball.networkData.GetElement<vec3>("LocalPosition");
 
 	vec3 clientPos = client->Data().GetElement<vec3>("Position");
-	vec3 clientExtents = client->Data().GetElement<vec3>("Size") * 0.5f;
+	vec3 clientExtents = client->Data().GetElement<vec3>("Size") * 0.5f
+		+ ball.networkData.GetElement<vec3>("Size") * 0.5f;
 
 	// Check if ball's position is within paddle x/y extents
 	if (ballPos.x >= clientPos.x - clientExtents.x && ballPos.x <= clientPos.x + clientExtents.x &&
@@ -198,6 +203,7 @@ void App::CheckScreenCollision()
 {
 	GameObject& ball = client->OtherObjects()[1000];
 	vec3 ballPos = ball.networkData.GetElement<vec3>("LocalPosition");
+	vec2 ballSize = ToWindowSize(ball.networkData.GetElement<vec3>("Size")) * 0.5f;
 	vec3 ballVel = ball.networkData.GetElement<vec3>("Velocity");
 	vec3 oldBallVel = ballVel;
 	vec3 signBall = glm::sign(ballVel);
@@ -207,13 +213,13 @@ void App::CheckScreenCollision()
 	int height = getWindowHeight();
 
 	// If ball y pos outside screen height, flip velocity y
-	if ((windowPos.y < 0 && signBall.y < 0) ||
-		(windowPos.y > height && signBall.y > 0))
+	if ((windowPos.y < ballSize.y && signBall.y < 0) ||
+		(windowPos.y > height - ballSize.y && signBall.y > 0))
 		ballVel.y *= -1;
 
 	// Same for x, only for side client is on and update their score
-	if ((windowPos.x < 0 && client->ID() == 2 && signBall.x < 0) ||
-		(windowPos.x > width && client->ID() == 1 && signBall.x > 0))
+	if ((windowPos.x < ballSize.x && client->ID() == 2 && signBall.x < 0) ||
+		(windowPos.x > width - ballSize.x && client->ID() == 1 && signBall.x > 0))
 	{
 		ballVel = vec3(glm::circularRand(3.f), 0);
 		ballPos = vec3(0);
@@ -258,6 +264,24 @@ void App::CheckWinState()
 
 void App::DrawScene()
 {
+	m_2dRenderer->begin();
+
+	// Background
+	m_2dRenderer->drawSprite(m_background, getWindowWidth() * .5f, getWindowHeight() * .5f,
+		getWindowWidth(), getWindowHeight(), 0, 100);
+
+	// Ball
+	if (client->OtherObjects().contains(1000))
+	{
+		NetworkData& ball = client->OtherData(1000);
+		vec2 wPos = ToWindowPos(ball.GetElement<vec3>("LocalPosition"));
+		vec2 wSize = ToWindowSize(ball.GetElement<vec3>("Size"));
+
+		m_2dRenderer->drawSprite(m_ballTex, wPos.x, wPos.y, wSize.x, wSize.y, 0, 99);
+	}
+
+	m_2dRenderer->end();
+
 	// Draw our body
 	vec3 pos = client->Data().GetElement<vec3>("Position");
 	vec4 color = client->Data().GetElement<vec4>("Color");
@@ -268,14 +292,14 @@ void App::DrawScene()
 	// Draw other clients bodies
 	for (auto& otherClient : client->OtherObjects())
 	{
+		if (otherClient.first == 1000) // ball
+			continue;
+
 		vec3 localPos = otherClient.second.networkData.GetElement<vec3>("LocalPosition");
 		vec4 color = otherClient.second.networkData.GetElement<vec4>("Color");
 		vec3 size = otherClient.second.networkData.GetElement<vec3>("Size");
 
-		if (otherClient.first == 1000) // the ball
-			Gizmos::addSphere(localPos, glm::length(size), 8, 8, color);
-
-		else Gizmos::addCapsule(localPos, size.y, size.x, 8, 8, color);
+		Gizmos::addCapsule(localPos, size.y, size.x, 8, 8, color);
 	}
 }
 

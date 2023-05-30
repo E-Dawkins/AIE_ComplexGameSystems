@@ -5,6 +5,7 @@
 #include "Client.h"
 #include "Renderer2D.h"
 #include "Font.h"
+#include <Texture.h>
 #include <glm/ext.hpp>
 #include <glm/mat4x4.hpp>
 
@@ -31,6 +32,8 @@ protected:
 	aie::Renderer2D* m_2dRenderer = nullptr;
 	aie::Font* m_font = nullptr;
 	aie::Font* m_fontHalf = nullptr;
+	aie::Texture* m_background = nullptr;
+	aie::Texture* m_ballTex = nullptr;
 
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
