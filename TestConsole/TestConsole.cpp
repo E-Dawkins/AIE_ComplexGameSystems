@@ -4,15 +4,9 @@
 
 int main()
 {
-    for (float t = 0; t <= 1; t += 0.05f)
-    {
-        std::cout << (1 - cosf(t * M_PI)) * 0.5f << "\n";
-    }
-
-    std::cout << "\n------\n\n";
-
-    for (float t = 0; t <= 1; t += 0.05f)
-    {
-        std::cout << 1 - ((cosf(t * M_PI)) + 1) * 0.5f << "\n";
-    }
+    std::cout << "bool : " << sizeof(bool) << "\n";
+    std::cout << "float : " << sizeof(float) << "\n";
+    std::cout << "int : " << sizeof(int) << "\n";
+    std::cout << "char : " << sizeof(char) << "\n";
+    std::cout << "unsigned char : " << sizeof(unsigned char) << "\n";
 }

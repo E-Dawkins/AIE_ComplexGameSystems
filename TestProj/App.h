@@ -39,13 +39,16 @@ protected:
 	mat4 m_projectionMatrix;
 	vec2 m_windowSize;
 
-	bool m_firstSend = true;
 	bool m_canSetScore = true;
 	int m_winner = -1;
-	int m_maxScore = 1;
+	int m_maxScore = 7;
+	bool m_gameStart = false;
+	float m_gameStartTimer = 3.f;
+	float m_storedGameStartTimer = m_gameStartTimer;
 
 	// Logic functions
-	void OnFirstSend();
+	void GameSetup(float _dt);
+	void SpawnBall();
 	void CheckInput(float _dt);
 	void CheckPaddleCollision();
 	void CheckScreenCollision();
@@ -53,14 +56,30 @@ protected:
 
 	// Visuals functions
 	void DrawScene();
-	void DrawUI();
+	void DrawSceneUI();
+	void DrawClientUI(NetworkData _data);
 	void DrawWinUI();
 
 	// Helper functions
 	vec2 ToWindowPos(glm::vec3 _worldPos)
 	{
-		vec4 clipPos = m_projectionMatrix * (m_viewMatrix * vec4(_worldPos, 1.0));;
+		vec4 clipPos = m_projectionMatrix * (m_viewMatrix * vec4(_worldPos, 1.0));
 		vec3 ndcPos = vec3(clipPos.x, clipPos.y, clipPos.z) / clipPos.w;
-		return ((vec2(ndcPos.x, ndcPos.y) + 1.f) / 2.f) * m_windowSize;
+		return ((vec2(ndcPos.x, ndcPos.y) + 1.f) * 0.5f) * m_windowSize;
+	}
+
+	vec2 ToWindowSize(glm::vec3 _worldPos)
+	{
+		vec4 clipPos = m_projectionMatrix * (m_viewMatrix * vec4(_worldPos, 1.0));
+		vec3 ndcPos = vec3(clipPos.x, clipPos.y, clipPos.z) / clipPos.w;
+		return vec2(ndcPos.x, ndcPos.y) * m_windowSize * 0.5f;
+	}
+
+	bool BothReady()
+	{
+		bool clientReady = client->Data().GetElement<bool>("Ready");
+		bool otherReady = client->OtherData(3 - client->ID()).GetElement<bool>("Ready");
+
+		return clientReady && otherReady;
 	}
 };

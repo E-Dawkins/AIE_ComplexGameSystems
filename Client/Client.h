@@ -39,8 +39,15 @@ public:
 	}
 	bool IsServerFull() { return m_serverFull; }
 
-	std::unordered_map<int, GameObject> OtherObjects() { return m_otherClientGameObjects; }
-	NetworkData& OtherData(int _id) { return m_otherClientGameObjects[_id].networkData; }
+	std::unordered_map<int, GameObject>& OtherObjects() { return m_otherClientGameObjects; }
+	NetworkData& OtherData(int _id) 
+	{ 
+		if (m_otherClientGameObjects.contains(_id))
+			return m_otherClientGameObjects[_id].networkData;
+
+		NetworkData temp = NetworkData();
+		return temp;
+	}
 
 	enum Interpolation
 	{
