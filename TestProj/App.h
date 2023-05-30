@@ -37,7 +37,6 @@ protected:
 
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
-	vec2 m_windowSize;
 
 	bool m_canSetScore = true;
 	int m_winner = -1;
@@ -65,14 +64,16 @@ protected:
 	{
 		vec4 clipPos = m_projectionMatrix * (m_viewMatrix * vec4(_worldPos, 1.0));
 		vec3 ndcPos = vec3(clipPos.x, clipPos.y, clipPos.z) / clipPos.w;
-		return ((vec2(ndcPos.x, ndcPos.y) + 1.f) * 0.5f) * m_windowSize;
+		vec2 windowSize = vec2(getWindowWidth(), getWindowHeight());
+		return ((vec2(ndcPos.x, ndcPos.y) + 1.f) * 0.5f) * windowSize;
 	}
 
 	vec2 ToWindowSize(glm::vec3 _worldPos)
 	{
 		vec4 clipPos = m_projectionMatrix * (m_viewMatrix * vec4(_worldPos, 1.0));
+		vec2 windowSize = vec2(getWindowWidth(), getWindowHeight());
 		vec3 ndcPos = vec3(clipPos.x, clipPos.y, clipPos.z) / clipPos.w;
-		return vec2(ndcPos.x, ndcPos.y) * m_windowSize * 0.5f;
+		return vec2(ndcPos.x, ndcPos.y) * windowSize * 0.5f;
 	}
 
 	bool BothReady()

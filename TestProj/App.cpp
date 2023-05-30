@@ -11,8 +11,6 @@ bool App::startup()
 	m_font = new aie::Font("./font/consolas.ttf", 50);
 	m_fontHalf = new aie::Font("./font/consolas.ttf", 25);
 
-	m_windowSize = vec2(getWindowWidth(), getWindowHeight());
-
 	// create simple camera transforms
 	m_viewMatrix = glm::lookAt(vec3(0,0,10), vec3(0), vec3(0, 1, 0));
 	m_projectionMatrix = glm::perspective(glm::pi<float>() * 0.25f,
@@ -302,7 +300,7 @@ void App::DrawSceneUI()
 
 		m_2dRenderer->setRenderColour(1, 1, 1);
 		m_2dRenderer->drawText(m_font, timerStr.c_str(),
-			m_windowSize.x * 0.5f, m_windowSize.y * 0.75f);
+			getWindowWidth() * 0.5f, getWindowHeight() * 0.75f);
 	}
 
 	m_2dRenderer->end();
@@ -318,7 +316,7 @@ void App::DrawClientUI(NetworkData _data)
 	m_2dRenderer->setRenderColour(1, 1, 1);
 	
 	int score = _data.GetElement<int>("Score");
-	m_2dRenderer->drawText(m_font, std::to_string(score).c_str(), wPos.x, m_windowSize.y - 75);
+	m_2dRenderer->drawText(m_font, std::to_string(score).c_str(), wPos.x, getWindowHeight() - 75);
 
 	if (!m_gameStart)
 	{
@@ -338,8 +336,8 @@ void App::DrawWinUI()
 	m_2dRenderer->begin();
 
 	m_2dRenderer->setRenderColour(0, 0, 0);
-	m_2dRenderer->drawBox(m_windowSize.x * .5f, m_windowSize.y * .5f, 400, 100);
-	m_2dRenderer->drawBox(m_windowSize.x * .5f, m_windowSize.y * .5f - 50, 200, 50);
+	m_2dRenderer->drawBox(getWindowWidth() * .5f, getWindowHeight() * .5f, 400, 100);
+	m_2dRenderer->drawBox(getWindowWidth() * .5f, getWindowHeight() * .5f - 50, 200, 50);
 
 	std::string temp = "Player " + std::to_string(m_winner) + " Won !";
 
@@ -350,8 +348,8 @@ void App::DrawWinUI()
 	float tOffset2 = m_2dRenderer->measureTextWidth(m_fontHalf, text2);
 
 	m_2dRenderer->setRenderColour(1, 1, 1);
-	m_2dRenderer->drawText(m_font, text, (m_windowSize.x - tOffset) * .5f, m_windowSize.y * .5f - 15);
-	m_2dRenderer->drawText(m_fontHalf, text2, (m_windowSize.x - tOffset2) * .5f, m_windowSize.y * .5f - 65);
+	m_2dRenderer->drawText(m_font, text, (getWindowWidth() - tOffset) * .5f, getWindowHeight() * .5f - 15);
+	m_2dRenderer->drawText(m_fontHalf, text2, (getWindowWidth() - tOffset2) * .5f, getWindowHeight() * .5f - 65);
 
 	m_2dRenderer->end();
 }
