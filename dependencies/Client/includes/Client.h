@@ -53,7 +53,7 @@ public:
 	{
 		NONE = 0,
 		LINEAR,
-		COSINE
+		COSINE,
 	};
 
 	void SendClientObject();

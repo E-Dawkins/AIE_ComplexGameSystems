@@ -25,8 +25,6 @@ bool App::startup()
 	client->Data().SetElement("Score", 0);
 	client->Data().SetElement("Ready", false);
 
-	client->AddOnReceiveCall(1000, [this](GameObject& _gO) {OnBallReceived(_gO); });
-
 	return true;
 }
 
@@ -60,27 +58,10 @@ void App::update(float deltaTime)
 
 	// Check if either player has won
 	if (m_gameStart)
-	{
-		int clientScore = client->Data().GetElement<int>("Score");
-		int otherScore = client->OtherData(3 - client->ID()).GetElement<int>("Score");
-
-		if (clientScore >= m_maxScore)
-			m_winner = client->ID();
-
-		else if (otherScore >= m_maxScore)
-			m_winner = 3 - client->ID();
-
-		// If someone has won, do something
-		if (m_winner != -1)
-		{
-			GameObject& ball = client->OtherObjects()[1000];
-			ball.networkData.SetElement("Velocity", vec3(0));
-			client->SendGameObject(ball);
-		}
-	}
+		CheckWinState();
 
 	// Only send data on a network frame, yes this does send
-	// all the data every network frame i know, bad for network
+	// all the data every network frame, i know bad for network :)
 	if (client->NetworkFrame())
 		client->SendClientObject();
 }
@@ -128,7 +109,7 @@ void App::GameSetup(float _dt)
 		{
 			SpawnBall();
 			m_gameStart = true;
-			m_gameStartTimer = m_storedGameStartTimer;
+			m_gameStartTimer = 3.f;
 		}
 	}
 }
@@ -136,7 +117,7 @@ void App::GameSetup(float _dt)
 void App::SpawnBall()
 {
 	GameObject ball = GameObject();
-	ball.networkData.SetElement("Size", vec3(0.1));
+	ball.networkData.SetElement("Size", vec3(0.1f));
 	ball.networkData.SetElement("Color", vec4(1));
 	ball.networkData.SetElement("Velocity", vec3(glm::circularRand(3.f), 0));
 	ball.lifeDecays = false;
@@ -153,7 +134,7 @@ void App::CheckInput(float _dt)
 	vec3 pos = client->Data().GetElement<vec3>("Position");
 	pos.x = (client->ID() % 2 == 0) ? 5.f : -5.f;
 
-	float verticalInput = input->isKeyDown(aie::INPUT_KEY_UP) - input->isKeyDown(aie::INPUT_KEY_DOWN);
+	int verticalInput = input->isKeyDown(aie::INPUT_KEY_UP) - input->isKeyDown(aie::INPUT_KEY_DOWN);
 	pos.y += 10.f * _dt * verticalInput;
 	vel.y = 10.f * verticalInput;
 
@@ -207,6 +188,7 @@ void App::CheckPaddleCollision()
 
 			ball.networkData.SetElement("Velocity", vel);
 			ball.networkData.SetElement("Position", ballPos);
+			ball.networkData.SetElement("LocalPosition", ballPos);
 			client->SendGameObject(ball);
 		}
 	}
@@ -233,15 +215,11 @@ void App::CheckScreenCollision()
 	if ((windowPos.x < 0 && client->ID() == 2 && signBall.x < 0) ||
 		(windowPos.x > width && client->ID() == 1 && signBall.x > 0))
 	{
-		if (m_canSetScore)
-		{
-			ballVel = vec3(glm::circularRand(3.f), 0);
-			ballPos = vec3(0);
-			int score = client->Data().GetElement<int>("Score") + 1;
-			client->Data().SetElement("Score", score);
-			client->SendClientObject();
-			m_canSetScore = false;
-		}
+		ballVel = vec3(glm::circularRand(3.f), 0);
+		ballPos = vec3(0);
+		int score = client->Data().GetElement<int>("Score") + 1;
+		client->Data().SetElement("Score", score);
+		client->SendClientObject();
 	}
 
 	if (ballVel != oldBallVel) // velocity has been changed, send network data
@@ -253,11 +231,24 @@ void App::CheckScreenCollision()
 	}
 }
 
-void App::OnBallReceived(GameObject& _gameobject)
+void App::CheckWinState()
 {
-	if (_gameobject.networkData.GetElement<vec3>("Position") == vec3(0))
+	int clientScore = client->Data().GetElement<int>("Score");
+	int otherScore = client->OtherData(3 - client->ID()).GetElement<int>("Score");
+	int MAXSCORE = 7;
+
+	if (clientScore >= 7)
+		m_winner = client->ID();
+
+	else if (otherScore >= 7)
+		m_winner = 3 - client->ID();
+
+	// If someone has won, do something
+	if (m_winner != -1)
 	{
-		m_canSetScore = true;
+		GameObject& ball = client->OtherObjects()[1000];
+		ball.networkData.SetElement("Velocity", vec3(0));
+		client->SendGameObject(ball);
 	}
 }
 
@@ -294,7 +285,7 @@ void App::DrawSceneUI()
 
 	if (BothReady() && !m_gameStart)
 	{
-		int timer = std::ceil(m_gameStartTimer);
+		int timer = (int)std::ceil(m_gameStartTimer);
 		std::string timerStr = std::to_string(timer);
 		float textOffset = m_2dRenderer->measureTextWidth(m_font, timerStr.c_str());
 
@@ -316,7 +307,7 @@ void App::DrawClientUI(NetworkData _data)
 	m_2dRenderer->setRenderColour(1, 1, 1);
 	
 	int score = _data.GetElement<int>("Score");
-	m_2dRenderer->drawText(m_font, std::to_string(score).c_str(), wPos.x, getWindowHeight() - 75);
+	m_2dRenderer->drawText(m_font, std::to_string(score).c_str(), wPos.x, (float)(getWindowHeight() - 75));
 
 	if (!m_gameStart)
 	{

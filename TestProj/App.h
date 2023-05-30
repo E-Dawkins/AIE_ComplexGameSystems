@@ -5,14 +5,11 @@
 #include "Client.h"
 #include "Renderer2D.h"
 #include "Font.h"
-#include <string>
 #include <glm/ext.hpp>
 #include <glm/mat4x4.hpp>
-#include <iostream>
 
 using glm::vec2;
 using glm::vec3;
-using glm::vec4;
 using glm::mat4;
 using aie::Gizmos;
 
@@ -38,12 +35,9 @@ protected:
 	mat4 m_viewMatrix;
 	mat4 m_projectionMatrix;
 
-	bool m_canSetScore = true;
 	int m_winner = -1;
-	int m_maxScore = 7;
 	bool m_gameStart = false;
 	float m_gameStartTimer = 3.f;
-	float m_storedGameStartTimer = m_gameStartTimer;
 
 	// Logic functions
 	void GameSetup(float _dt);
@@ -51,7 +45,7 @@ protected:
 	void CheckInput(float _dt);
 	void CheckPaddleCollision();
 	void CheckScreenCollision();
-	void OnBallReceived(GameObject& _gameobject);
+	void CheckWinState();
 
 	// Visuals functions
 	void DrawScene();
