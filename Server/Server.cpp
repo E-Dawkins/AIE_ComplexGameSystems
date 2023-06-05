@@ -133,6 +133,8 @@ void Server::OnReceivedClientData(RakNet::Packet* _packet)
 	if (object.id == -1) // don't store a game object with id -1
 		return;
 
+	std::cout << "Received ping " << m_pPeerInterface->GetLastPing(_packet->guid) << "ms from Client {" << object.id << "}\n";
+
 	m_gameObjects[object.id] = object;
 
 	m_pPeerInterface->Send(&bs, HIGH_PRIORITY, RELIABLE_ORDERED,
