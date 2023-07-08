@@ -167,7 +167,7 @@ void Client::OnReceivedClientDataPacket(RakNet::Packet* _packet)
 		m_otherObjectTs[object.id] = 0;
 
 		// If a received function exists, call it
-		if (m_onReceivedFunctions.contains(clientID))
+		if (m_onReceivedFunctions.count(clientID) != 0)
 			m_onReceivedFunctions.at(clientID)(object);
 
 		if (m_otherClientGameObjects.count(object.id) == 0)

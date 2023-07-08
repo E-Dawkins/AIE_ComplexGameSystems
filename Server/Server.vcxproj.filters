@@ -29,7 +29,7 @@
     <ClInclude Include="Server.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameMessages.h">
+    <ClInclude Include="ServerMessages.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Client\GameObject.h">

@@ -32,5 +32,8 @@
     <CopyFileToFolders Include="NetworkData.h">
       <Filter>Header Files</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="ClientMessages.h">
+      <Filter>Header Files</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

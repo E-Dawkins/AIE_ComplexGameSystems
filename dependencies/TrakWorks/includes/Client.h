@@ -2,7 +2,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <RakPeerInterface.h>
-#include "../Server/GameMessages.h"
+#include "ClientMessages.h"
 #include "GameObject.h"
 #include <unordered_map>
 

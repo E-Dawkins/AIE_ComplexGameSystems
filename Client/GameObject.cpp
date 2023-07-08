@@ -1,6 +1,6 @@
 #include "GameObject.h"
 #include <BitStream.h>
-#include "../Server/GameMessages.h"
+#include "ClientMessages.h"
 #include <iostream>
 #include <StringCompressor.h>
 

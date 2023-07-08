@@ -2,7 +2,7 @@
 #include <glm/ext.hpp>
 #include <RakPeerInterface.h>
 #include "NetworkData.h"
-#include "../Server/GameMessages.h"
+#include "ClientMessages.h"
 #include <vector>
 
 using glm::vec3;

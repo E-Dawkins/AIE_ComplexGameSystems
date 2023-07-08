@@ -2,7 +2,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <RakPeerInterface.h>
-#include "../Server/GameMessages.h"
+#include "ClientMessages.h"
 #include "GameObject.h"
 #include <unordered_map>
 
@@ -42,7 +42,7 @@ public:
 	std::unordered_map<int, GameObject>& OtherObjects() { return m_otherClientGameObjects; }
 	NetworkData& OtherData(int _id) 
 	{ 
-		if (m_otherClientGameObjects.contains(_id))
+		if (m_otherClientGameObjects.count(_id) != 0)
 			return m_otherClientGameObjects[_id].networkData;
 
 		NetworkData temp = NetworkData();
